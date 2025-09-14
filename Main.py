@@ -18,7 +18,8 @@ gm1 = GameObject([
         Transform(Vector3(110, 40, 0), Vector3(0, 0, 0), Vector2(30, 30)),
         SpriteRenderer(DrawingShape.CIRCLE, Color(20, 140, 30)),
         Rigidbody2D(Vector2(5, 0), BodyState.CYNEMATIC , mass=200),
-        CircleCollider2D(15)
+        CircleCollider2D(15),
+        P.S()
 ])
 
 gm2 = GameObject([

@@ -18,3 +18,6 @@ from .Utils import Vector2, Vector3, Color
 
 # Engine
 from .Engine import Engine
+
+# Input
+from .Input import Input

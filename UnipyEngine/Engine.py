@@ -1,11 +1,10 @@
 import os
 import sys
-import pygame
 import time
 import re
+import pygame
+from UnipyEngine.Input import Input
 
-
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "HIDE"
 screen = None
 
 class Engine:
@@ -30,6 +29,9 @@ class Engine:
             Engine.screen.fill((0, 0, 0))
             dt = Engine.clock.tick(60) / 1000.0
 
+            events = pygame.event.get()
+            Input.UpdateEvents(events)  # mise à jour des inputs
+
             for gameObject in GameObject.instances:
                 for component in gameObject.components:
                     if hasattr(component, "Update") and callable(component.Update):
@@ -37,7 +39,7 @@ class Engine:
 
             pygame.display.flip()
 
-            for event in pygame.event.get():
+            for event in events:
                 if event.type == pygame.QUIT:
                     Engine.running = False
 
