@@ -5,6 +5,11 @@ class Component:
         self.gameObject = gameObject
         self.requiredComponents = requiredComponents if requiredComponents else []
 
+    def CompareTag(self, tag:str):
+        assert isinstance(tag, str)
+
+        return (tag in self.gameObject.tags)
+
     def __str__(self) -> str:
         return f"<{self.__class__.__name__}>"
 
@@ -21,7 +26,14 @@ class Transform(Component):
 
 class GameObject:
     instances = []
-    def __init__(self, components):
+    def __init__(self, name, tags, components):
+        assert isinstance(name, str)
+        assert isinstance(tags, list)
+        assert isinstance(components, list)
+
+        self.name = name
+        self.tags = tags
+
         GameObject.instances.append(self)
         self.components = []
         for component in components:
@@ -40,3 +52,4 @@ class GameObject:
             if isinstance(component, targetComponent):
                 return component
         return None
+

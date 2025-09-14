@@ -86,12 +86,16 @@ class Rigidbody2D(Component):
         assert isinstance(bodyType, BodyState)
 
         super().__init__(gameObject=gameObject, requiredComponents=[Transform])
+
         self.velocity = initialVelocity
         self.bodyType = bodyType
         self.mass = float(mass)
         self.gravityScale = gravityScale
         self.bounciness = bounciness
         self.forces = Vector2(0, 0)
+
+        self.current_collisions = set()  # collisions de cette frame
+        self.previous_collisions = set() # collisions de la frame précédente
 
     def AddForce(self, force: Vector2):
         self.forces.x += force.x
@@ -118,23 +122,45 @@ class Rigidbody2D(Component):
         transform.position.x += self.velocity.x * dt
         transform.position.y += self.velocity.y * dt
 
-        # 2. collisions (seulement si on a un collider)
+         # 2. Gestion collisions
+        self.current_collisions.clear()
         if collider:
             for other in GameObject.instances:
                 if other is self.gameObject:
                     continue
                 other_collider = other.GetComponent(Collider2D)
-                if not other_collider:
-                    continue
-
-                if collider.Intersects(other_collider):
+                if other_collider and collider.Intersects(other_collider):
                     self.ResolveCollision(collider, other_collider)
+                    self.current_collisions.add(other)
 
-        # reset forces
+        # 3. Callbacks OnCollisionEnter
+        for other in self.current_collisions - self.previous_collisions:
+            for comp in self.gameObject.components:
+                if hasattr(comp, "OnCollisionEnter"):
+                    comp.OnCollisionEnter(other.GetComponent(Collider2D))
+            for comp in other.components:
+                if hasattr(comp, "OnCollisionEnter"):
+                    comp.OnCollisionEnter(self.gameObject.GetComponent(Collider2D))
+
+        # 4. Callbacks OnCollisionExit
+        for other in self.previous_collisions - self.current_collisions:
+            for comp in self.gameObject.components:
+                if hasattr(comp, "OnCollisionExit"):
+                    comp.OnCollisionExit(other.GetComponent(Collider2D))
+            for comp in other.components:
+                if hasattr(comp, "OnCollisionExit"):
+                    comp.OnCollisionExit(self.gameObject.GetComponent(Collider2D))
+
+        # 5. Reset forces et swap collisions
         self.forces = Vector2(0, 0)
-
+        self.previous_collisions = set(self.current_collisions)
+        
     def ResolveCollision(self, col1, col2):
         transform = self.gameObject.GetComponent(Transform)
+
+        # Si le corps est kinematic, on ne bouge pas ni ne change la vitesse
+        if self.bodyType == BodyState.KINEMATIC:  
+            return
 
         # ------------------------
         # 1. Box vs Box
@@ -223,9 +249,6 @@ class Rigidbody2D(Component):
                 if vn < 0:
                     self.velocity.x -= (1 + self.bounciness) * vn * nx
                     self.velocity.y -= (1 + self.bounciness) * vn * ny
-
-
-
 
         # (symétrique : Box vs Circle → on délègue au code Circle vs Box)
         elif isinstance(col1, BoxCollider2D) and isinstance(col2, CircleCollider2D):

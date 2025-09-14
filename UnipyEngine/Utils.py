@@ -6,7 +6,7 @@ class DrawingShape(Enum):
 
 class BodyState(Enum):
     CYNEMATIC = 1
-    KYNEMATIC = 2
+    KINEMATIC = 2
 
 class Vector2:
     def __init__(self, x:float, y:float):
