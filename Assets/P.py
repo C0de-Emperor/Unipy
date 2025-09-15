@@ -1,6 +1,7 @@
 from UnipyEngine.Core import Component
 from UnipyEngine.Physics import Collider2D
 from UnipyEngine.Input import Input, KeyCode
+from UnipyEngine.Engine import Debug
 
 
 class S(Component):
@@ -12,15 +13,9 @@ class S(Component):
         if(Input.GetKeyDown(KeyCode.A)):
             print("e")
 
+
     def OnCollisionEnter(self, other:Collider2D):
-        if(other.CompareTag("Ball b")):
-            print(self.gameObject.name + " enter collide Ball 1")
-        if(other.CompareTag("Cube")):
-            print(self.gameObject.name + " enter collide Cude")
+        Debug.Log(self.gameObject.name + " enter collide " + other.gameObject.name)
 
     def OnCollisionExit(self, other:Collider2D):
-        if(other.CompareTag("Ball b")):
-            print(self.gameObject.name + " exit collide Ball 1")
-        if(other.CompareTag("Cube")):
-            print(self.gameObject.name + " exit collide Cude")
-        
+        Debug.Log(self.gameObject.name + " exit collide " + other.gameObject.name)

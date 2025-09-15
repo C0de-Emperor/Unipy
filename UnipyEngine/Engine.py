@@ -3,7 +3,9 @@ import sys
 import time
 import re
 import pygame
+
 from UnipyEngine.Input import Input
+from UnipyEngine.Physics import Rigidbody2D
 
 screen = None
 
@@ -26,6 +28,8 @@ class Engine:
         from UnipyEngine.Core import GameObject
 
         while Engine.running:
+            Rigidbody2D.ClearFrameCollisions()
+
             Engine.screen.fill((0, 0, 0))
             dt = Engine.clock.tick(60) / 1000.0
 
@@ -43,6 +47,7 @@ class Engine:
                 if event.type == pygame.QUIT:
                     Engine.running = False
 
+        print("")
         Debug.LogSuccess("Exit")
         pygame.quit()
 
@@ -127,13 +132,13 @@ class Engine:
 
 class Debug:
     def Log(log:str):
-        print(f"\033[LOG]\033[0m : {log}")
+        print(f"\033[0m[LOG]\033[0m {log}")
 
     def LogSuccess(success:str):
-        print(f"\033[92m[SUCCESS]\033[0m : {success}")
+        print(f"\033[92m[SUCCESS]\033[0m {success}")
 
     def LogWarnig(warning:str):
-        print(f"\033[93m[WARNING]\033[0m : {warning}")
+        print(f"\033[93m[WARNING]\033[0m {warning}")
 
     def LogError(error:str):
-        print(f"\033[91m[ERROR]\033[0m : {error}")
+        print(f"\033[91m[ERROR]\033[0m {error}")

@@ -44,7 +44,7 @@ GameObject(
     [
         Transform(Vector3(110, 440, 0), Vector3(0, 0, 0), Vector2(100, 100)),
         SpriteRenderer(DrawingShape.SQUARE, Color(200, 200, 30)),
-        Rigidbody2D(Vector2(0, -10), BodyState.KINEMATIC , mass=20),
+        Rigidbody2D(Vector2(0, 0), BodyState.KINEMATIC , mass=20),
         BoxCollider2D(Vector2(100, 100))
     ]
 )

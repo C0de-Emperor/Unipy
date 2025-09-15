@@ -1,9 +1,10 @@
-from UnipyEngine.Core import Component, Transform, GameObject
-from UnipyEngine.Utils import Vector2, BodyState
-import math
 import os
+import math
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "HIDE"
 import pygame
+
+from UnipyEngine.Core import Component, Transform, GameObject
+from UnipyEngine.Utils import Vector2, BodyState
 
 class Collider2D(Component):
     def __init__(self, gameObject=None):
@@ -77,6 +78,7 @@ class CircleCollider2D(Collider2D):
 
 class Rigidbody2D(Component):
     GRAVITY = Vector2(0, 9.8)
+    collisions_handled_this_frame = set()  # static -> partagé par tous les Rigidbody2D
 
     def __init__(self, initialVelocity, bodyType, mass=1.0, gravityScale=5.0, bounciness=0.5, gameObject=None):
         assert isinstance(initialVelocity, Vector2)
@@ -122,16 +124,25 @@ class Rigidbody2D(Component):
         transform.position.x += self.velocity.x * dt
         transform.position.y += self.velocity.y * dt
 
-         # 2. Gestion collisions
+        # --- Gestion collisions ---
         self.current_collisions.clear()
         if collider:
             for other in GameObject.instances:
                 if other is self.gameObject:
                     continue
                 other_collider = other.GetComponent(Collider2D)
-                if other_collider and collider.Intersects(other_collider):
+                if not other_collider:
+                    continue
+
+                # clé unique pour la paire
+                pair = tuple(sorted([id(self.gameObject), id(other)]))
+                if pair in Rigidbody2D.collisions_handled_this_frame:
+                    continue  # déjà traité cette frame
+
+                if collider.Intersects(other_collider):
                     self.ResolveCollision(collider, other_collider)
                     self.current_collisions.add(other)
+                    Rigidbody2D.collisions_handled_this_frame.add(pair)
 
         # 3. Callbacks OnCollisionEnter
         for other in self.current_collisions - self.previous_collisions:
@@ -253,3 +264,9 @@ class Rigidbody2D(Component):
         # (symétrique : Box vs Circle → on délègue au code Circle vs Box)
         elif isinstance(col1, BoxCollider2D) and isinstance(col2, CircleCollider2D):
             self.ResolveCollision(col2, col1)
+
+    @staticmethod
+    def ClearFrameCollisions():
+        """À appeler au début de chaque frame (avant tous les Updates)."""
+        Rigidbody2D.collisions_handled_this_frame.clear()
+
