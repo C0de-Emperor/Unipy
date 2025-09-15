@@ -1,7 +1,6 @@
-from UnipyEngine.Core import Component
+from UnipyEngine.Core import Component, GameObject
 from UnipyEngine.Physics import Collider2D
 from UnipyEngine.Input import Input, KeyCode
-from UnipyEngine.Engine import Debug
 
 
 class S(Component):
@@ -15,7 +14,9 @@ class S(Component):
 
 
     def OnCollisionEnter(self, other:Collider2D):
-        Debug.Log(self.gameObject.name + " enter collide " + other.gameObject.name)
+        #Debug.Log(self.gameObject.name + " enter collide " + other.gameObject.name)
+        GameObject.Destroy(self.gameObject)
 
     def OnCollisionExit(self, other:Collider2D):
-        Debug.Log(self.gameObject.name + " exit collide " + other.gameObject.name)
+        pass
+        #Debug.Log(self.gameObject.name + " exit collide " + other.gameObject.name)

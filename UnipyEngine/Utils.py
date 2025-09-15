@@ -45,3 +45,16 @@ class Color:
 
     def __str__(self) -> str:
         return str((self.r, self.g, self.b))
+
+class Debug:
+    def Log(log:str):
+        print(f"\033[0m[LOG]\033[0m {log}")
+
+    def LogSuccess(success:str):
+        print(f"\033[92m[SUCCESS]\033[0m {success}")
+
+    def LogWarnig(warning:str):
+        print(f"\033[93m[WARNING]\033[0m {warning}")
+
+    def LogError(error:str):
+        print(f"\033[91m[ERROR]\033[0m {error}")

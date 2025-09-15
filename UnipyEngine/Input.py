@@ -1,4 +1,5 @@
 import pygame
+from UnipyEngine.Utils import Vector2
 
 class KeyCode:
     # Lettres
@@ -82,7 +83,6 @@ class KeyCode:
     #VolumeDown = pygame.K_VOLUMEDOWN
     #Mute = pygame.K_MUTE
 
-
 class Input:
     _keys_down = set()
     _keys_up = set()
@@ -130,7 +130,7 @@ class Input:
 
     @staticmethod
     def GetMousePosition():
-        return Input._mouse_pos
+        return Vector2(*Input._mouse_pos)
 
     @staticmethod
     def GetMouseButton(button: int) -> bool:

@@ -6,6 +6,7 @@ import pygame
 
 from UnipyEngine.Input import Input
 from UnipyEngine.Physics import Rigidbody2D
+from UnipyEngine.Utils import Debug
 
 screen = None
 
@@ -130,15 +131,3 @@ class Engine:
             Debug.LogSuccess("Loading Complete\n")
             time.sleep(0.5)
 
-class Debug:
-    def Log(log:str):
-        print(f"\033[0m[LOG]\033[0m {log}")
-
-    def LogSuccess(success:str):
-        print(f"\033[92m[SUCCESS]\033[0m {success}")
-
-    def LogWarnig(warning:str):
-        print(f"\033[93m[WARNING]\033[0m {warning}")
-
-    def LogError(error:str):
-        print(f"\033[91m[ERROR]\033[0m {error}")

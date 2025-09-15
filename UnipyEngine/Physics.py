@@ -1,6 +1,4 @@
-import os
 import math
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "HIDE"
 import pygame
 
 from UnipyEngine.Core import Component, Transform, GameObject

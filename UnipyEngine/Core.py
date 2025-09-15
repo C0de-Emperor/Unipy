@@ -1,4 +1,5 @@
 from UnipyEngine.Utils import Vector3, Vector2
+from UnipyEngine.Utils import Debug
 
 class Component:
     def __init__(self, requiredComponents=None, gameObject=None):
@@ -53,3 +54,18 @@ class GameObject:
                 return component
         return None
 
+    def Destroy(self):
+        """Détruit cet objet et ses composants"""
+        # On appelle un éventuel OnDestroy sur les composants
+        for comp in self.components:
+            if hasattr(comp, "OnDestroy"):
+                comp.OnDestroy()
+
+        # On vide les composants
+        self.components.clear()
+
+        # On retire l'objet de la liste globale
+        if self in GameObject.instances:
+            GameObject.instances.remove(self)
+
+        Debug.Log(f"GameObject '{self.name}' détruit")
