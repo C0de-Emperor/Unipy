@@ -50,6 +50,7 @@ class Engine:
 
         print("")
         Debug.LogSuccess("Exit")
+        print("")
         pygame.quit()
 
     @staticmethod
