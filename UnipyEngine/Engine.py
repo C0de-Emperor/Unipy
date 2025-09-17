@@ -66,9 +66,8 @@ class Engine:
         time.sleep(0.5)
 
         if not os.path.exists(folder):
-            Debug.LogError(f"UnipyEngine: Scripts folder '{folder}' not found")
-            sys.exit(0)
-
+            Debug.LogError(f"UnipyEngine: Scripts folder '{folder}' not found", isFatal=True)
+            
         init_file = os.path.join(folder, "__init__.py")
 
         # 1. récupérer les scripts connus

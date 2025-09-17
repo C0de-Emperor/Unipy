@@ -7,7 +7,10 @@ Engine.LoadScripts("Assets")
 
 Engine.Init(800, 800)
 
-
+# Définition des scènes
+game = Scene("Game")
+menu = Scene("Menu")
+SceneManager.LoadScene("Game")
 
 ball = GameObject(
     name = "Ball 1",
@@ -28,6 +31,9 @@ GameObject.Instantiate(ball, position= Vector3(10, 10, 0), name = 'ball 1')
 GameObject.Instantiate(ball, position= Vector3(60, 40, 0), name = 'ball 2')
 GameObject.Instantiate(ball, position= Vector3(100, 200, 0), name = 'ball 3')
 
+menu.AddObject(ball)
+
+
 
 """
 GameObject(
@@ -44,6 +50,8 @@ GameObject(
     ]
 )
 """
+
+
 GameObject(
     name = "Cube",
     tags = [

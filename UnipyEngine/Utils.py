@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class DrawingShape(Enum):
     SQUARE = 1
     CIRCLE = 2
@@ -56,5 +57,8 @@ class Debug:
     def LogWarnig(warning:str):
         print(f"\033[93m[WARNING]\033[0m {warning}")
 
-    def LogError(error:str):
+    def LogError(error:str, isFatal=False):
+        import sys
         print(f"\033[91m[ERROR]\033[0m {error}")
+        if isFatal:
+            sys.exit(0)
