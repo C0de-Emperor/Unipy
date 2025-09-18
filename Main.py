@@ -1,6 +1,5 @@
 from UnipyEngine import *
 from Assets import *
-import time
 
 # Charge tous les scripts custom
 Engine.LoadScripts("Assets")
@@ -12,6 +11,7 @@ game = Scene("Game")
 menu = Scene("Menu")
 SceneManager.LoadScene("Game")
 
+"""
 ball = GameObject(
     name = "Ball 1",
     tags = [
@@ -35,7 +35,7 @@ menu.AddObject(ball)
 
 
 
-"""
+
 GameObject(
     "Ball 2",
     [
@@ -49,8 +49,6 @@ GameObject(
         
     ]
 )
-"""
-
 
 GameObject(
     name = "Cube",
@@ -65,8 +63,23 @@ GameObject(
     ],
     auto_add = False
 ).AddToScene()
+"""
 
+tileset = {
+    0 : Color(200, 0, 0),
+    1 : Color(0, 200, 0),
+    2 : Color(0, 0, 200)
+}
 
+tilemap = GameObject(
+    name = "Tilemap",
+    tags = [],
+    components= [
+        Transform(Vector3(0, 0, 0), Vector3(0, 0, 0), Vector2(0, 0)),
+        TilemapRenderer(Vector2(50, 50), r"Assets\Tilemap.json", tileset=tileset)
+    ],
+    auto_add = True
+)
 
 Engine.Run()
 

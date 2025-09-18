@@ -7,7 +7,6 @@ from UnipyEngine.SceneManagement import SceneManager
 
 class S(Component):
     def __init__(self, gameObject = None):
-
         super().__init__(gameObject=gameObject, requiredComponents=[])
 
     def Update(self, dt):

@@ -32,6 +32,10 @@ class SceneManager:
         if name not in SceneManager.scenes:
             Debug.LogError(f"Scene '{name}' not found", isFatal = True)
 
+        if SceneManager.current_scene:
+            if SceneManager.current_scene.name == name:
+                return
+
         # vider la scène courante
         GameObject.instances.clear()
 

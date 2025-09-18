@@ -10,7 +10,7 @@ from .Physics import CircleCollider2D, BoxCollider2D
 from .Physics import BodyState
 
 # Rendering
-from .Rendering import SpriteRenderer
+from .Rendering import SpriteRenderer, TilemapRenderer
 from .Utils import DrawingShape
 
 # Utils

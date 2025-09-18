@@ -1,5 +1,4 @@
 from UnipyEngine.Utils import Vector3, Vector2
-from UnipyEngine.Utils import Debug
 
 class Component:
     def __init__(self, requiredComponents=None, gameObject=None):
@@ -93,7 +92,6 @@ class GameObject:
         SceneManager.GetActiveScene().RemoveObject(self)
         if self in GameObject.instances:
             GameObject.instances.remove(self)
-
 
     @staticmethod
     def Instantiate(original, position=None, rotation=None, name=None):
