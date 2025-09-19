@@ -6,41 +6,62 @@ import pygame
 
 from UnipyEngine.Input import Input
 from UnipyEngine.Physics import Rigidbody2D
-from UnipyEngine.Utils import Debug
+from UnipyEngine.Utils import Debug, Color
 
 screen = None
 
 class Engine:
     screen = None
+    static_screen = None
+    color = None
     clock = None
     running = False
 
     @staticmethod
-    def Init(width=800, height=800):
+    def Init(width=800, height=800, color:Color = Color(0, 0, 0)):
         pygame.init()
         Engine.screen = pygame.display.set_mode((width, height))
+        Engine.static_screen = pygame.Surface((width, height))
+
         Engine.clock = pygame.time.Clock()
         Engine.running = True
-        Engine.screen.fill((0, 0, 0))
+        Engine.color = color
+        Engine.screen.fill((color.r, color.g, color.b))
+        Engine.static_screen.fill((color.r, color.g, color.b))
         pygame.display.flip()
         
     @staticmethod
+    def BakeStaticObjects():
+        from UnipyEngine.Core import GameObject
+        for gameObject in GameObject.instances:
+            if gameObject.static:
+                for comp in gameObject.components:
+                    if hasattr(comp, "Render") and callable(comp.Render):
+                        comp.Render(Engine.static_screen)
+
+    @staticmethod
     def Run():
         from UnipyEngine.Core import GameObject
+        Engine.BakeStaticObjects()
 
         while Engine.running:
             Rigidbody2D.ClearFrameCollisions()
 
-            Engine.screen.fill((0, 0, 0))
+            Engine.screen.fill((Engine.color.r, Engine.color.g, Engine.color.b))
+            Engine.screen.blit(Engine.static_screen, (0, 0))
             dt = Engine.clock.tick(60) / 1000.0
 
             events = pygame.event.get()
             Input.UpdateEvents(events)  # mise à jour des inputs
 
             for gameObject in GameObject.instances:
-                for component in gameObject.components:
-                    if hasattr(component, "Update") and callable(component.Update):
-                        component.Update(dt)
+                if not gameObject.static:
+                    for component in gameObject.components:
+                        if hasattr(component, "Update") and callable(component.Update): component.Update(dt)
+                        if hasattr(component, "Render") and callable(component.Render): component.Render(Engine.screen)
+                else:
+                    for component in gameObject.components:
+                        if hasattr(component, "Update") and callable(component.Update): component.Update(dt)
 
             pygame.display.flip()
 

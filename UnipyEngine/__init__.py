@@ -6,11 +6,11 @@ from .Core import Component, Transform
 
 # Physics
 from .Physics import Rigidbody2D
-from .Physics import CircleCollider2D, BoxCollider2D
+from .Physics import CircleCollider2D, BoxCollider2D, TilemapCollider2D
 from .Physics import BodyState
 
 # Rendering
-from .Rendering import SpriteRenderer, TilemapRenderer
+from .Rendering import SpriteRenderer, TilemapRenderer, SpriteSheet
 from .Utils import DrawingShape
 
 # Utils

@@ -46,6 +46,9 @@ class Color:
 
     def __str__(self) -> str:
         return str((self.r, self.g, self.b))
+    
+    def __tuple__(self) -> tuple:
+        return (self.r, self.g, self.b)
 
 class Debug:
     def Log(log:str):

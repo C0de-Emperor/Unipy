@@ -1,10 +1,11 @@
 from UnipyEngine import *
 from Assets import *
+import pygame
 
 # Charge tous les scripts custom
 Engine.LoadScripts("Assets")
 
-Engine.Init(800, 800)
+Engine.Init(900, 900, color=Color(54, 215, 247))
 
 # Définition des scènes
 game = Scene("Game")
@@ -65,10 +66,30 @@ GameObject(
 ).AddToScene()
 """
 
+ball = GameObject(
+    name = "Ball 1",
+    tags = [
+        "Ball b"
+    ],
+    components= [
+        Transform(Vector3(400, 100, 0), Vector3(0, 0, 0), Vector2(60, 60)),
+        SpriteRenderer(DrawingShape.CIRCLE, Color(0, 255, 0)),
+        Rigidbody2D(Vector2(0, 0), BodyState.CYNEMATIC, mass=1),
+        CircleCollider2D(30)
+    ],
+    auto_add = True
+)
+
+terrain_sheet = SpriteSheet(r"Assets\terrain_sprite_sheet.png", Vector2(16, 16))
+
 tileset = {
-    0 : Color(200, 0, 0),
-    1 : Color(0, 200, 0),
-    2 : Color(0, 0, 200)
+    #"1" : r"Assets\creative_casing.png",
+    "1" : terrain_sheet.GetTile(6, 0),
+    "2" : terrain_sheet.GetTile(7, 0),
+    "3" : terrain_sheet.GetTile(8, 0),
+    "4" : terrain_sheet.GetTile(6, 1),
+    "5" : terrain_sheet.GetTile(8, 1),
+    "6" : terrain_sheet.GetTile(7, 1)
 }
 
 tilemap = GameObject(
@@ -76,10 +97,12 @@ tilemap = GameObject(
     tags = [],
     components= [
         Transform(Vector3(0, 0, 0), Vector3(0, 0, 0), Vector2(0, 0)),
-        TilemapRenderer(Vector2(50, 50), r"Assets\Tilemap.json", tileset=tileset)
+        TilemapRenderer(Vector2(75, 75), r"Assets\Tilemap.json", tileset=tileset),
+        TilemapCollider2D(["1", "2", "3"]),
+        Rigidbody2D(Vector2(0, 0), BodyState.KINEMATIC)
     ],
-    auto_add = True
+    auto_add = True,
+    static=True
 )
 
 Engine.Run()
-

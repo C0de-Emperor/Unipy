@@ -15,14 +15,14 @@ class SpriteRenderer(Component):
         self.drawShape = shape
         self.color = color
 
-    def Update(self, dt):
+    def Render(self, used_screen):
         # On récupère le Transform depuis le GameObject parent
         transform = self.gameObject.GetComponent(Transform)
         if transform:
             match self.drawShape:
                 case DrawingShape.SQUARE:
                     pygame.draw.rect(
-                        Engine.screen,
+                        used_screen,
                         (self.color.r, self.color.g, self.color.b),
                         pygame.Rect(
                             transform.position.x - transform.size.x/2,
@@ -33,22 +33,47 @@ class SpriteRenderer(Component):
                     )
                 case DrawingShape.CIRCLE:
                     pygame.draw.circle(
-                        Engine.screen,
+                        used_screen,
                         (self.color.r, self.color.g, self.color.b),
                         (int(transform.position.x), int(transform.position.y)),
                         int(min(transform.size.x, transform.size.y) / 2)
                     )
 
 class TilemapRenderer(Component):
-    def __init__(self, tile_size:Vector2, path:str, tileset=None, gameObject=None):
+    def __init__(self, tile_size:Vector2, path:str, tileset:dict=None, gameObject=None):
         super().__init__(gameObject=gameObject)
         self.tile_size = tile_size
         self.tileset = tileset or {}      # dict {tile_id: Color/Sprite}
 
-        self.LoadTilemapFromJSON(path=path)
+        if "0" in tileset.keys():
+            Debug.LogError("The key 0 is only for empty tile in tileset", isFatal=True)
 
-    def Update(self, dt):
-        self.Render()
+        for tile_id, value in tileset.items():
+            if isinstance(value, str):  
+                # Charger une image depuis un chemin
+                if not os.path.exists(value):
+                    Debug.LogError(f"No file at '{value}'", isFatal=True)
+                    return
+
+                try:
+                    img = pygame.image.load(value).convert_alpha()
+                    img = pygame.transform.scale(img, (int(tile_size.x), int(tile_size.y)))
+                    self.tileset[tile_id] = img
+                except:
+                    Debug.LogError(f"Exception during import of the file : '{value}'", isFatal=True)
+                    return
+            elif isinstance(value, Color):  
+                # Créer une Surface unie avec la couleur
+                surf = pygame.Surface((int(tile_size.x), int(tile_size.y)), pygame.SRCALPHA)
+                surf.fill((value.r, value.g, value.b))
+                self.tileset[tile_id] = surf
+            elif isinstance(value, pygame.Surface):
+                # Déjà une surface → on s'assure qu'elle est à la bonne taille
+                self.tileset[tile_id] = pygame.transform.scale(value, (int(tile_size.x), int(tile_size.y)))
+            else:
+                Debug.LogError(f"Unsupported tileset value for tile_id {tile_id}: {type(value)}", True)
+
+        self.LoadTilemapFromJSON(path=path)
 
     def SetTile(self, x:int, y:int, tile_id:int):
         """Place une tuile (tile_id) à la position (x, y)."""
@@ -58,20 +83,17 @@ class TilemapRenderer(Component):
     def GetTile(self, x:int, y:int):
         return self.grid[y][x]
 
-    def Render(self):
-        from UnipyEngine.Engine import Engine
+    def Render(self, used_screen):
+        t = self.gameObject.GetComponent(Transform)
         for y in range(self.height):
             for x in range(self.width):
                 tile_id = self.grid[y][x]
+                if tile_id == "0":
+                    pass
                 if tile_id in self.tileset:
-                    color = self.tileset[tile_id]
-                    px = self.gameObject.GetComponent(Transform).position.x + x * self.tile_size.x
-                    py = self.gameObject.GetComponent(Transform).position.y + y * self.tile_size.y
-                    pygame.draw.rect(
-                        Engine.screen,
-                        (color.r, color.g, color.b),
-                        pygame.Rect(px, py, self.tile_size.x, self.tile_size.y)
-                    )
+                    px = t.position.x + x * self.tile_size.x
+                    py = t.position.y + y * self.tile_size.y
+                    used_screen.blit(self.tileset[tile_id], (px, py))
 
     def LoadTilemapFromJSON(self, path:str):
         if not os.path.exists(path):
@@ -93,3 +115,37 @@ class TilemapRenderer(Component):
                 tile_id = data["tiles"][y][x]
                 self.grid[y][x] = tile_id
                 self.SetTile(x, y, tile_id)
+
+class SpriteSheet:
+    def __init__(self, path:str, tile_size:Vector2):
+        if not os.path.exists(path):
+            Debug.LogError(f"No file at '{path}'", isFatal=True)
+            return
+
+        self.sheet = pygame.image.load(path).convert_alpha()
+        self.tile_size = tile_size
+        self.cols = self.sheet.get_width() // int(tile_size.x)
+        self.rows = self.sheet.get_height() // int(tile_size.y)
+
+    def GetTile(self, col: int, row: int) -> pygame.Surface:
+        """Récupère une tile par coordonnées (col, row)."""
+        try :
+            rect = pygame.Rect(
+                col * self.tile_size.x,
+                row * self.tile_size.y,
+                self.tile_size.x,
+                self.tile_size.y
+            )
+            return self.sheet.subsurface(rect).copy()
+        except ValueError as e:
+            Debug.LogError(e, True)
+
+    def GetTileById(self, tile_id: int) -> pygame.Surface:
+        """Récupère une tile par index linéaire (0,1,2... en parcourant ligne par ligne)."""
+        col = tile_id % self.cols
+        row = tile_id // self.cols
+        return self.GetTile(col, row)
+
+    def ToDict(self, mapping: dict) -> dict:
+        """Construit un dict {tile_id: Surface} pour un Tilemap."""
+        return {tile_id: self.GetTile(col, row) for tile_id, (col, row) in mapping.items()}

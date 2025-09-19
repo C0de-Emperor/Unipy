@@ -1,4 +1,4 @@
-from UnipyEngine.Utils import Vector3, Vector2
+from UnipyEngine.Utils import Vector3, Vector2, Debug
 
 class Component:
     def __init__(self, requiredComponents=None, gameObject=None):
@@ -32,12 +32,13 @@ class Transform(Component):
 class GameObject:
     instances = []
 
-    def __init__(self, name = "GameObject", tags = None, components = None, auto_add=False):
+    def __init__(self, name = "GameObject", tags = None, components = None, static=False, auto_add=False):
         assert isinstance(name, str)
 
         self.name = name
         self.tags = tags or []
         self.components = []
+        self.static = static
 
         if components:
             for component in components:
@@ -47,7 +48,7 @@ class GameObject:
             for component in components:
                 for requiredComponent in component.requiredComponents:
                     if not any(isinstance(c, requiredComponent) for c in components):
-                        raise AssertionError(f"{component} requires <{requiredComponent.__name__}> on GameObject(id={id(self)})")
+                        Debug.LogError(f"{component} requires <{requiredComponent.__name__}> on GameObject(id={id(self)})", isFatal=True)
 
         if auto_add:
             self.AddToScene()

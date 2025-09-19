@@ -2,27 +2,29 @@ import math
 import pygame
 
 from UnipyEngine.Core import Component, Transform, GameObject
-from UnipyEngine.Utils import Vector2, BodyState
+from UnipyEngine.Utils import Vector2, BodyState, Vector3
+
 
 class Collider2D(Component):
-    def __init__(self, gameObject=None):
+    def __init__(self, local_position=Vector3(0,0,0), gameObject=None):
         super().__init__(gameObject=gameObject, requiredComponents=[Transform, Rigidbody2D])
+        self.local_position = local_position
 
     def Intersects(self, other) -> bool:
         """Test de collision avec un autre collider (à spécialiser)."""
         raise NotImplementedError("Chaque collider doit définir Intersects()")
 
 class BoxCollider2D(Collider2D):
-    def __init__(self, size:Vector2, gameObject=None):
-        super().__init__(gameObject)
+    def __init__(self, size:Vector2, local_position=None, gameObject=None):
+        super().__init__(gameObject=gameObject, local_position=local_position)
         self.size = size
 
     def GetRect(self):
         transform = self.gameObject.GetComponent(Transform)
         if transform:
             return pygame.Rect(
-                int(transform.position.x - self.size.x / 2),
-                int(transform.position.y - self.size.y / 2),
+                int((transform.position.x + self.local_position.x) - self.size.x / 2),
+                int((transform.position.y + self.local_position.y) - self.size.y / 2),
                 int(self.size.x),
                 int(self.size.y)
             )
@@ -40,14 +42,14 @@ class BoxCollider2D(Collider2D):
         return False
 
 class CircleCollider2D(Collider2D):
-    def __init__(self, radius:float, gameObject=None):
-        super().__init__(gameObject)
+    def __init__(self, radius:float, local_position=Vector3(0,0,0), gameObject=None):
+        super().__init__(gameObject=gameObject, local_position=local_position)
         self.radius = radius
 
     def GetCircle(self):
         transform = self.gameObject.GetComponent(Transform)
         if transform:
-            return (transform.position.x, transform.position.y, self.radius)
+            return (transform.position.x + self.local_position.x, transform.position.y + self.local_position.y, self.radius)
         return None
 
     def Intersects(self, other) -> bool:
@@ -59,7 +61,6 @@ class CircleCollider2D(Collider2D):
             return dist_sq <= (r1 + r2) ** 2
 
         elif isinstance(other, BoxCollider2D):
-            
             # Cercle vs Rectangle
             cx, cy, r = self.GetCircle()
             rect = other.GetRect()
@@ -70,9 +71,49 @@ class CircleCollider2D(Collider2D):
 
             # Distance entre ce point et le centre du cercle
             dist_sq = (cx - closest_x) ** 2 + (cy - closest_y) ** 2
+            #print(dist_sq <= r ** 2)
             return dist_sq <= r ** 2
 
         return False
+
+class TilemapCollider2D(Collider2D):
+    def __init__(self, solid_tiles: list[str], gameObject=None):
+        super().__init__(gameObject=gameObject)
+        #self.tilemap = self.gameObject.GetComponent(Tile)
+        self.solid_tiles = set(solid_tiles)  # plus rapide en set
+        self.colliders = []  # liste de colliders internes
+
+    def Start(self):
+        """Génère les colliders au lancement."""
+        self.GenerateColliders()
+
+    def GenerateColliders(self):
+        from UnipyEngine.Rendering import TilemapRenderer
+
+        self.colliders.clear()
+        tilemap = self.gameObject.GetComponent(TilemapRenderer)
+        t = tilemap.tile_size
+        for y in range(tilemap.height):
+            for x in range(tilemap.width):
+                tile_id = tilemap.grid[y][x]
+                if tile_id in self.solid_tiles:
+                    pos = Vector3(
+                        x * t.x + t.x / 2,
+                        y * t.y + t.y / 2,
+                        0
+                    )
+                    collider = BoxCollider2D(Vector2(t.x, t.y), local_position=pos, gameObject=self.gameObject)
+                    self.colliders.append(collider)
+
+    def Intersects(self, other: "Collider2D") -> bool:
+        for col in self.colliders:
+            if col.Intersects(other):
+                return True
+        return False
+
+    def GetColliders(self):
+        return self.colliders
+
 
 class Rigidbody2D(Component):
     GRAVITY = Vector2(0, 9.8)
@@ -137,10 +178,17 @@ class Rigidbody2D(Component):
                 if pair in Rigidbody2D.collisions_handled_this_frame:
                     continue  # déjà traité cette frame
 
-                if collider.Intersects(other_collider):
-                    self.ResolveCollision(collider, other_collider)
-                    self.current_collisions.add(other)
-                    Rigidbody2D.collisions_handled_this_frame.add(pair)
+                if isinstance(other_collider, TilemapCollider2D):
+                    for tile_col in other_collider.GetColliders():
+                        if collider.Intersects(tile_col):
+                            self.ResolveCollision(collider, tile_col)
+                            self.current_collisions.add(other)
+                            Rigidbody2D.collisions_handled_this_frame.add(pair)
+                else:
+                    if collider.Intersects(other_collider):
+                        self.ResolveCollision(collider, other_collider)
+                        self.current_collisions.add(other)
+                        Rigidbody2D.collisions_handled_this_frame.add(pair)
 
         # 3. Callbacks OnCollisionEnter
         for other in self.current_collisions - self.previous_collisions:
