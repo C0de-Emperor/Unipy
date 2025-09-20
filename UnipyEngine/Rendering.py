@@ -40,6 +40,8 @@ class SpriteRenderer(Component):
                     )
 
 class TilemapRenderer(Component):
+    default_tile_path = r"UnipyEngine\default_texture.png"
+
     def __init__(self, tile_size:Vector2, path:str, tileset:dict=None, gameObject=None):
         super().__init__(gameObject=gameObject)
         self.tile_size = tile_size
@@ -72,6 +74,13 @@ class TilemapRenderer(Component):
                 self.tileset[tile_id] = pygame.transform.scale(value, (int(tile_size.x), int(tile_size.y)))
             else:
                 Debug.LogError(f"Unsupported tileset value for tile_id {tile_id}: {type(value)}", True)
+                return
+
+
+        img = pygame.image.load(TilemapRenderer.default_tile_path).convert_alpha()
+        img = pygame.transform.scale(img, (int(tile_size.x), int(tile_size.y)))
+        self.default_tile = img
+
 
         self.LoadTilemapFromJSON(path=path)
 
@@ -88,12 +97,15 @@ class TilemapRenderer(Component):
         for y in range(self.height):
             for x in range(self.width):
                 tile_id = self.grid[y][x]
+
                 if tile_id == "0":
-                    pass
-                if tile_id in self.tileset:
-                    px = t.position.x + x * self.tile_size.x
-                    py = t.position.y + y * self.tile_size.y
-                    used_screen.blit(self.tileset[tile_id], (px, py))
+                    continue
+
+                px = t.position.x + x * self.tile_size.x
+                py = t.position.y + y * self.tile_size.y
+
+                surf = self.tileset.get(tile_id, self.default_tile)
+                used_screen.blit(surf, (px, py))
 
     def LoadTilemapFromJSON(self, path:str):
         if not os.path.exists(path):

@@ -16,12 +16,14 @@ class Engine:
     color = None
     clock = None
     running = False
+    renderCollider = False
 
     @staticmethod
-    def Init(width=800, height=800, color:Color = Color(0, 0, 0)):
+    def Init(width=800, height=800, color:Color = Color(0, 0, 0), renderCollider = False):
         pygame.init()
         Engine.screen = pygame.display.set_mode((width, height))
         Engine.static_screen = pygame.Surface((width, height))
+        Engine.renderCollider = renderCollider
 
         Engine.clock = pygame.time.Clock()
         Engine.running = True
@@ -38,6 +40,10 @@ class Engine:
                 for comp in gameObject.components:
                     if hasattr(comp, "Render") and callable(comp.Render):
                         comp.Render(Engine.static_screen)
+                if Engine.renderCollider:
+                    for comp in gameObject.components:
+                        if hasattr(comp, "RenderCollider") and callable(comp.RenderCollider): comp.RenderCollider(Engine.static_screen)
+
 
     @staticmethod
     def Run():
@@ -55,13 +61,14 @@ class Engine:
             Input.UpdateEvents(events)  # mise à jour des inputs
 
             for gameObject in GameObject.instances:
+                for component in gameObject.components:
+                    if hasattr(component, "Update") and callable(component.Update): component.Update(dt)
                 if not gameObject.static:
                     for component in gameObject.components:
-                        if hasattr(component, "Update") and callable(component.Update): component.Update(dt)
                         if hasattr(component, "Render") and callable(component.Render): component.Render(Engine.screen)
-                else:
-                    for component in gameObject.components:
-                        if hasattr(component, "Update") and callable(component.Update): component.Update(dt)
+                    if Engine.renderCollider:
+                        for comp in gameObject.components:
+                            if hasattr(comp, "RenderCollider") and callable(comp.RenderCollider): comp.RenderCollider(Engine.screen)
 
             pygame.display.flip()
 

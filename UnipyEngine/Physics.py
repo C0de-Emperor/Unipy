@@ -15,7 +15,7 @@ class Collider2D(Component):
         raise NotImplementedError("Chaque collider doit définir Intersects()")
 
 class BoxCollider2D(Collider2D):
-    def __init__(self, size:Vector2, local_position=None, gameObject=None):
+    def __init__(self, size:Vector2, local_position=Vector3(0,0,0), gameObject=None):
         super().__init__(gameObject=gameObject, local_position=local_position)
         self.size = size
 
@@ -40,6 +40,15 @@ class BoxCollider2D(Collider2D):
             return other.Intersects(self)  # délègue au cercle
 
         return False
+
+    def RenderCollider(self, used_screen):
+            rect = self.GetRect()
+            pygame.draw.rect(
+                used_screen,
+                (200, 0, 0),   # rouge
+                rect,
+                2              # épaisseur (1px, pour juste un contour)
+            )
 
 class CircleCollider2D(Collider2D):
     def __init__(self, radius:float, local_position=Vector3(0,0,0), gameObject=None):
@@ -75,6 +84,18 @@ class CircleCollider2D(Collider2D):
             return dist_sq <= r ** 2
 
         return False
+
+    def RenderCollider(self, used_screen):
+        circle = self.GetCircle()
+        if circle:
+            cx, cy, r = circle
+            pygame.draw.circle(
+                used_screen,
+                (200, 0, 0),   # rouge
+                (int(cx), int(cy)),
+                int(r),
+                2              # épaisseur (1px, contour)
+            )
 
 class TilemapCollider2D(Collider2D):
     def __init__(self, solid_tiles: list[str], gameObject=None):
@@ -114,8 +135,18 @@ class TilemapCollider2D(Collider2D):
     def GetColliders(self):
         return self.colliders
 
+    def RenderCollider(self, used_screen):
+        for col in self.colliders:
+            rect = col.GetRect()
+            pygame.draw.rect(
+                used_screen,
+                (200, 0, 0),   # rouge
+                rect,
+                2              # épaisseur (1px, pour juste un contour)
+            )
 
 class Rigidbody2D(Component):
+
     GRAVITY = Vector2(0, 9.8)
     collisions_handled_this_frame = set()  # static -> partagé par tous les Rigidbody2D
 
@@ -129,11 +160,15 @@ class Rigidbody2D(Component):
         super().__init__(gameObject=gameObject, requiredComponents=[Transform])
 
         self.velocity = initialVelocity
-        self.bodyType = bodyType
         self.mass = float(mass)
         self.gravityScale = gravityScale
         self.bounciness = bounciness
         self.forces = Vector2(0, 0)
+        """
+        if(bodyType == BodyState.CYNEMATIC and self.gameObject.static == True):
+             Debug.LogWarnig(f"Static gameobject can't be Cynematic")
+        """  
+        self.bodyType = bodyType
 
         self.current_collisions = set()  # collisions de cette frame
         self.previous_collisions = set() # collisions de la frame précédente

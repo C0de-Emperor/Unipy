@@ -5,7 +5,7 @@ import pygame
 # Charge tous les scripts custom
 Engine.LoadScripts("Assets")
 
-Engine.Init(900, 900, color=Color(54, 215, 247))
+Engine.Init(900, 900, color=Color(54, 215, 247), renderCollider=True)
 
 # Définition des scènes
 game = Scene("Game")
@@ -83,7 +83,7 @@ ball = GameObject(
 terrain_sheet = SpriteSheet(r"Assets\terrain_sprite_sheet.png", Vector2(16, 16))
 
 tileset = {
-    #"1" : r"Assets\creative_casing.png",
+    #"0" : r"Assets\creative_casing.png",
     "1" : terrain_sheet.GetTile(6, 0),
     "2" : terrain_sheet.GetTile(7, 0),
     "3" : terrain_sheet.GetTile(8, 0),
