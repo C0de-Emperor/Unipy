@@ -7,18 +7,46 @@ import json
 import os
 
 class SpriteRenderer(Component):
-    def __init__(self, shape:DrawingShape, color:Color, gameObject = None):
-        assert isinstance(shape, DrawingShape)
-        assert isinstance(color, Color)
-
+    def __init__(self, shape:DrawingShape=None, color:Color=None, image=None, gameObject=None):
+        """
+        - shape + color -> rend une forme simple (cercle ou carré).
+        - image (str ou pygame.Surface) -> rend une texture PNG.
+        """
         super().__init__(gameObject=gameObject, requiredComponents=[Transform])
+
         self.drawShape = shape
         self.color = color
+        self.sprite = None  # surface pygame si image chargée
+
+        if image:
+            if isinstance(image, str):
+                if not os.path.exists(image):
+                    Debug.LogError(f"Image not found: {image}", isFatal=True)
+                else:
+                    img = pygame.image.load(image).convert_alpha()
+                    self.sprite = img
+            elif isinstance(image, pygame.Surface):
+                self.sprite = image
+            else:
+                Debug.LogError(f"Unsupported image type: {type(image)}", isFatal=True)
 
     def Render(self, used_screen):
-        # On récupère le Transform depuis le GameObject parent
         transform = self.gameObject.GetComponent(Transform)
-        if transform:
+        if not transform:
+            return
+
+        if self.sprite:
+            # Redimensionner sprite selon transform.size
+            scaled = pygame.transform.scale(
+                self.sprite,
+                (int(transform.size.x), int(transform.size.y))
+            )
+            # On blitte en centrant (comme circle/rect)
+            pos = (transform.position.x - transform.size.x/2,
+                   transform.position.y - transform.size.y/2)
+            used_screen.blit(scaled, pos)
+
+        elif self.drawShape and self.color:
             match self.drawShape:
                 case DrawingShape.SQUARE:
                     pygame.draw.rect(
@@ -38,6 +66,7 @@ class SpriteRenderer(Component):
                         (int(transform.position.x), int(transform.position.y)),
                         int(min(transform.size.x, transform.size.y) / 2)
                     )
+
 
 class TilemapRenderer(Component):
     default_tile_path = r"UnipyEngine\default_texture.png"

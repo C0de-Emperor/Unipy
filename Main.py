@@ -73,7 +73,7 @@ ball = GameObject(
     ],
     components= [
         Transform(Vector3(400, 100, 0), Vector3(0, 0, 0), Vector2(60, 60)),
-        SpriteRenderer(DrawingShape.CIRCLE, Color(0, 255, 0)),
+        SpriteRenderer(DrawingShape.CIRCLE, image=r"Assets\creative_casing.png"),
         Rigidbody2D(Vector2(0, 0), BodyState.CYNEMATIC, mass=1),
         CircleCollider2D(30)
     ],
