@@ -22,9 +22,11 @@ class BoxCollider2D(Collider2D):
     def GetRect(self):
         transform = self.gameObject.GetComponent(Transform)
         if transform:
+            world_x = (transform.position.x + self.local_position.x) - self.size.x / 2
+            world_y = (transform.position.y + self.local_position.y) - self.size.y / 2
             return pygame.Rect(
-                int((transform.position.x + self.local_position.x) - self.size.x / 2),
-                int((transform.position.y + self.local_position.y) - self.size.y / 2),
+                int(world_x),
+                int(world_y),
                 int(self.size.x),
                 int(self.size.y)
             )
@@ -43,12 +45,27 @@ class BoxCollider2D(Collider2D):
 
     def RenderCollider(self, used_screen):
             rect = self.GetRect()
-            pygame.draw.rect(
-                used_screen,
-                (200, 0, 0),   # rouge
-                rect,
-                2              # épaisseur (1px, pour juste un contour)
-            )
+            if not rect:
+                return
+            # draw in screen space using camera if available
+            try:
+                from UnipyEngine.Rendering import Camera, Engine
+            except Exception:
+                Camera = None
+                Engine = None
+
+            if used_screen == Engine.static_world_surface:
+                # Rendre directement en monde sur la surface statique
+                pygame.draw.rect(used_screen, (200, 0, 0), rect, 2)
+            elif Camera and Camera.active_camera:
+                # world top-left -> screen
+                screen_pos = Camera.WorldToScreen(Vector3(rect.x, rect.y, 0))
+                sw = int(self.size.x * Camera.active_camera.zoom)
+                sh = int(self.size.y * Camera.active_camera.zoom)
+                draw_rect = pygame.Rect(int(screen_pos.x), int(screen_pos.y), sw, sh)
+                pygame.draw.rect(used_screen, (200, 0, 0), draw_rect, 2)
+            else:
+                pygame.draw.rect(used_screen, (200, 0, 0), rect, 2)
 
 class CircleCollider2D(Collider2D):
     def __init__(self, radius:float, local_position=Vector3(0,0,0), gameObject=None):
@@ -89,13 +106,21 @@ class CircleCollider2D(Collider2D):
         circle = self.GetCircle()
         if circle:
             cx, cy, r = circle
-            pygame.draw.circle(
-                used_screen,
-                (200, 0, 0),   # rouge
-                (int(cx), int(cy)),
-                int(r),
-                2              # épaisseur (1px, contour)
-            )
+            try:
+                from UnipyEngine.Rendering import Camera, Engine
+            except Exception:
+                Camera = None
+                Engine = None
+
+            if used_screen == Engine.static_world_surface:
+                # Rendre directement en monde
+                pygame.draw.circle(used_screen, (200, 0, 0), (int(cx), int(cy)), int(r), 2)
+            elif Camera and Camera.active_camera:
+                screen_center = Camera.WorldToScreen(Vector3(cx, cy, 0))
+                rr = int(r * Camera.active_camera.zoom)
+                pygame.draw.circle(used_screen, (200, 0, 0), (int(screen_center.x), int(screen_center.y)), rr, 2)
+            else:
+                pygame.draw.circle(used_screen, (200, 0, 0), (int(cx), int(cy)), int(r), 2)
 
 class TilemapCollider2D(Collider2D):
     def __init__(self, solid_tiles: list[str], gameObject=None):
@@ -137,13 +162,8 @@ class TilemapCollider2D(Collider2D):
 
     def RenderCollider(self, used_screen):
         for col in self.colliders:
-            rect = col.GetRect()
-            pygame.draw.rect(
-                used_screen,
-                (200, 0, 0),   # rouge
-                rect,
-                2              # épaisseur (1px, pour juste un contour)
-            )
+            if hasattr(col, "RenderCollider") and callable(col.RenderCollider):
+                col.RenderCollider(used_screen)
 
 class Rigidbody2D(Component):
 

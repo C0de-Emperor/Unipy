@@ -1,4 +1,4 @@
-from UnipyEngine.Core import Component, GameObject
+from UnipyEngine.Core import Component, GameObject, Transform
 from UnipyEngine.Physics import Collider2D
 from UnipyEngine.Input import Input, KeyCode
 from UnipyEngine.Utils import Debug
@@ -10,6 +10,7 @@ class S(Component):
         super().__init__(gameObject=gameObject, requiredComponents=[])
 
     def Update(self, dt):
+
         if(Input.GetKeyDown(KeyCode.A)):
             SceneManager.LoadScene("Menu")
         if(Input.GetKeyDown(KeyCode.E)):

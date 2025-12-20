@@ -35,40 +35,66 @@ class Engine:
     @staticmethod
     def BakeStaticObjects():
         from UnipyEngine.Core import GameObject
+        # Créer une surface monde pour les statiques (assez grande pour le monde)
+        Engine.static_world_surface = pygame.Surface((10000, 10000), pygame.SRCALPHA)
+        Engine.static_world_surface.fill((0, 0, 0, 0))  # transparent
+
         for gameObject in GameObject.instances:
             if gameObject.static:
                 for comp in gameObject.components:
                     if hasattr(comp, "Render") and callable(comp.Render):
-                        comp.Render(Engine.static_screen)
+                        # Rendre en coordonnées monde sur static_world_surface
+                        comp.Render(Engine.static_world_surface)
                 if Engine.renderCollider:
                     for comp in gameObject.components:
-                        if hasattr(comp, "RenderCollider") and callable(comp.RenderCollider): comp.RenderCollider(Engine.static_screen)
+                        if hasattr(comp, "RenderCollider") and callable(comp.RenderCollider):
+                            comp.RenderCollider(Engine.static_world_surface)
 
 
     @staticmethod
     def Run():
-        from UnipyEngine.Core import GameObject
+        from UnipyEngine.Core import GameObject, Vector3, Transform
         Engine.BakeStaticObjects()
 
         while Engine.running:
             Rigidbody2D.ClearFrameCollisions()
 
             Engine.screen.fill((Engine.color.r, Engine.color.g, Engine.color.b))
-            Engine.screen.blit(Engine.static_screen, (0, 0))
+            # Blitter la surface statique optimisée
+            from UnipyEngine.Rendering import Camera
+            if Camera.active_camera and Engine.static_world_surface:
+                cam = Camera.active_camera
+                zoom = cam.zoom
+                # Position écran pour (0,0) monde (centre)
+                screen_00 = Camera.WorldToScreen(Vector3(0, 0, 0))
+                if zoom == 1.0:
+                    # Pas de scaling pour zoom=1, plus rapide
+                    Engine.screen.blit(Engine.static_world_surface, (screen_00.x, screen_00.y))
+                else:
+                    # Scaling pour autres zooms (plus lent)
+                    scaled_static = pygame.transform.scale(Engine.static_world_surface, (int(10000 * zoom), int(10000 * zoom)))
+                    Engine.screen.blit(scaled_static, (screen_00.x, screen_00.y))
             dt = Engine.clock.tick(60) / 1000.0
 
             events = pygame.event.get()
             Input.UpdateEvents(events)  # mise à jour des inputs
 
+            # 1) Update: appeler Update sur TOUS les composants avant de renderer.
             for gameObject in GameObject.instances:
                 for component in gameObject.components:
-                    if hasattr(component, "Update") and callable(component.Update): component.Update(dt)
+                    if hasattr(component, "Update") and callable(component.Update):
+                        component.Update(dt)
+
+            # 2) Render: renderiser tous les objets non-statiques après les updates
+            for gameObject in GameObject.instances:
                 if not gameObject.static:
                     for component in gameObject.components:
-                        if hasattr(component, "Render") and callable(component.Render): component.Render(Engine.screen)
+                        if hasattr(component, "Render") and callable(component.Render):
+                            component.Render(Engine.screen)
                     if Engine.renderCollider:
                         for comp in gameObject.components:
-                            if hasattr(comp, "RenderCollider") and callable(comp.RenderCollider): comp.RenderCollider(Engine.screen)
+                            if hasattr(comp, "RenderCollider") and callable(comp.RenderCollider):
+                                comp.RenderCollider(Engine.screen)
 
             pygame.display.flip()
 
