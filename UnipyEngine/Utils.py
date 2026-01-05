@@ -59,6 +59,9 @@ class Debug:
 
     def LogWarnig(warning:str):
         print(f"\033[93m[WARNING]\033[0m {warning}")
+    
+    def LogRegistry(log:str):
+        print(f"\033[94m[Registry]\033[0m {log}")
 
     def LogError(error:str, isFatal=False):
         import sys

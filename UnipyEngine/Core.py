@@ -56,16 +56,11 @@ class GameObject:
     def AddToScene(self):
         """Ajoute cet objet dans la scène"""
         if self not in GameObject.instances:
-            from UnipyEngine.SceneManagement import SceneManager
-
             for comp in self.components:
                 if hasattr(comp, "Start"):
                     comp.Start()
 
-            SceneManager.GetActiveScene().AddObject(self)
-
-            if self not in GameObject.instances:
-                GameObject.instances.append(self)
+            GameObject.instances.append(self)
 
     def GetComponent(self, targetComponent) -> Component:
         assert Component in targetComponent.__bases__
@@ -82,15 +77,12 @@ class GameObject:
 
     def Destroy(self):
         """Détruit cet objet et ses composants"""
-        from UnipyEngine.SceneManagement import SceneManager
-
         for comp in self.components:
             if hasattr(comp, "OnDestroy"):
                 comp.OnDestroy()
 
         self.components.clear()
 
-        SceneManager.GetActiveScene().RemoveObject(self)
         if self in GameObject.instances:
             GameObject.instances.remove(self)
 

@@ -13,8 +13,11 @@ class S(Component):
 
         if(Input.GetKeyDown(KeyCode.A)):
             SceneManager.LoadScene("Menu")
+            Debug.Log("A pressed")
+            #self.gameObject.GetComponent(Transform).position.x += 10
         if(Input.GetKeyDown(KeyCode.E)):
             SceneManager.LoadScene("Game")
+            #self.gameObject.GetComponent(Transform).position.x -= 10
 
     def Start(self):
         #Debug.Log("created")

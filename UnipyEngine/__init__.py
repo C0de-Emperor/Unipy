@@ -22,4 +22,8 @@ from .Engine import Engine
 # Input
 from .Input import Input
 
-from .SceneManagement import Scene, SceneManager
+# Scene Management
+from .SceneManagement import SceneManager
+
+# Module Management
+from .ModuleManagement import ModuleType, Scene, Script

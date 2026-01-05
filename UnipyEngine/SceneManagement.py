@@ -1,55 +1,34 @@
 from UnipyEngine.Core import GameObject
 from UnipyEngine.Utils import Debug
+from UnipyEngine.ModuleManagement import ModuleManager
 
-class Scene:
-    def __init__(self, name):
-        self.name = name
-        self.objects = []
-
-        SceneManager.AddScene(self)
-
-    def AddObject(self, obj):
-        if obj not in self.objects:
-            self.objects.append(obj)
-
-    def RemoveObject(self, obj):
-        if obj in self.objects:
-            self.objects.remove(obj)
-
-    def Clear(self):
-        self.objects.clear()
 
 class SceneManager:
-    scenes = {}
     current_scene = None
 
     @staticmethod
-    def AddScene(scene: Scene):
-        SceneManager.scenes[scene.name] = scene
-
-    @staticmethod
     def LoadScene(name: str):
-        if name not in SceneManager.scenes:
-            Debug.LogError(f"Scene '{name}' not found", isFatal = True)
-
-        if SceneManager.current_scene:
-            if SceneManager.current_scene.name == name:
-                return
+        if SceneManager.current_scene == name:
+            return
 
         # vider la scène courante
         GameObject.instances.clear()
 
-        # charger la nouvelle
-        SceneManager.current_scene = SceneManager.scenes[name]
-
-        for obj in SceneManager.current_scene.objects:
-            GameObject.instances.append(obj)
-
-        Debug.LogSuccess(f"Scene '{name}' loaded successfully")
+        # charger la nouvelle scène en appelant la fonction load() du module de scène
+        try:
+            scene_module = ModuleManager.find_module("scene", name)
+            if scene_module and hasattr(scene_module, 'load'):
+                scene_module.load()
+                SceneManager.current_scene = name
+                # Recréer la surface statique avec les nouveaux objets
+                from UnipyEngine.Engine import Engine
+                Engine.BakeStaticObjects()
+                Debug.LogSuccess(f"Scene '{name}' loaded successfully")
+            else:
+                Debug.LogError(f"Scene '{name}' not found or does not have a load() function", isFatal=True)
+        except Exception as e:
+            Debug.LogError(f"Error loading scene '{name}': {e}", isFatal=True)
 
     @staticmethod
     def GetActiveScene():
-        if(SceneManager.current_scene):
-            return SceneManager.current_scene
-        else:
-            Debug.LogError("There is no active Scene", isFatal = True)
+        return SceneManager.current_scene
