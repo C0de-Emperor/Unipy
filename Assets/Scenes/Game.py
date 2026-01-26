@@ -1,11 +1,10 @@
 from UnipyEngine import *
 from UnipyEngine.ModuleManagement import Scene
 
-scene = Scene("Game")
 
 def load():
     from Assets import S
-    ball = GameObject(
+    GameObject(
         name = "Ball 1",
         tags = [
             "Ball b"
@@ -13,9 +12,9 @@ def load():
         components= [
             Transform(Vector3(400, 100, 0), Vector3(0, 0, 0), Vector2(60, 60)),
             SpriteRenderer(DrawingShape.CIRCLE, color=Color(0, 0, 0)), #image=r"Assets\creative_casing.png"
-            Rigidbody2D(Vector2(0, 0), BodyState.CYNEMATIC, mass=1),
+            Rigidbody2D(Vector2(0, 0), BodyState.CYNEMATIC, mass=1, bounciness=0.9),
             CircleCollider2D(30),
-            Camera(zoom=1.0),
+            Camera(zoom=1.0, bakgroundColor = Color(54, 215, 247)),
             S()
         ],
         auto_add = True,
@@ -34,7 +33,7 @@ def load():
         "6" : terrain_sheet.GetTile(7, 1)
     }
 
-    tilemap = GameObject(
+    GameObject(
         name = "Tilemap",
         tags = [],
         components= [
@@ -46,3 +45,6 @@ def load():
         auto_add = True,
         static=True
     )
+
+
+file_Type = Scene("Game", load)

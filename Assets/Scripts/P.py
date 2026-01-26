@@ -1,9 +1,12 @@
-from UnipyEngine.Core import Component, GameObject, Transform
+from UnipyEngine.Core import Component
 from UnipyEngine.Physics import Collider2D
 from UnipyEngine.Input import Input, KeyCode
 from UnipyEngine.Utils import Debug
 from UnipyEngine.SceneManagement import SceneManager
 
+
+from UnipyEngine.ModuleManagement import Script
+file_Type = Script(__name__)
 
 class S(Component):
     def __init__(self, gameObject = None):

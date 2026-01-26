@@ -1,0 +1,9 @@
+{
+    "resolution":
+    {
+        "width": 900,
+        "height": 900
+    },
+    "initialScene":"Game",
+    "renderCollider":false
+}

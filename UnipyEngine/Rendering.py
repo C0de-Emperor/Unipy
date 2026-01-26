@@ -131,6 +131,9 @@ class TilemapRenderer(Component):
                 py = t.position.y + y * self.tile_size.y
 
                 surf = self.tileset.get(tile_id, self.default_tile)
+                if surf == self.default_tile:
+                    Debug.LogWarning(f"Unknown tile key [{tile_id}]")
+
                 if used_screen == Engine.static_world_surface:
                     # Rendre directement en monde
                     used_screen.blit(surf, (px, py))
@@ -196,11 +199,12 @@ class SpriteSheet:
 class Camera(Component):
     active_camera = None  # statique : une caméra active à la fois
 
-    def __init__(self, zoom: float = 1.0, gameObject=None):
+    def __init__(self, zoom:float = 1.0, gameObject=None, bakgroundColor:Color = Color(0, 50, 150)):
         super().__init__(gameObject=gameObject, requiredComponents=[Transform])
         self.zoom = zoom
         self.target = None
         self.offset = Vector2(0, 0)
+        self.bakgroundColor = bakgroundColor
 
         self.SetActive()
 
@@ -231,6 +235,7 @@ class Camera(Component):
 
     def SetActive(self):
         Camera.active_camera = self
+        Engine.screen.fill(tuple(self.bakgroundColor))
 
     @staticmethod
     def WorldToScreen(pos: Vector3) -> Vector2:
@@ -256,7 +261,7 @@ class Camera(Component):
         """Applique la caméra lors du rendu d’une surface (sprite, tile, etc.)."""
         if not Camera.active_camera:
             Debug.LogError("No Active Camera", True)
-            #return surface, (world_pos.x, world_pos.y)
+            return
 
         # Calcul position écran
         screen_pos = Camera.WorldToScreen(world_pos)

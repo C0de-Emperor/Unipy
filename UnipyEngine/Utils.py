@@ -44,12 +44,14 @@ class Color:
         self.g = g
         self.b = b
 
+        self
+
     def __str__(self) -> str:
         return str((self.r, self.g, self.b))
     
-    def __tuple__(self) -> tuple:
-        return (self.r, self.g, self.b)
-
+    def __iter__(self):
+        return iter((self.r, self.g, self.b))
+    
 class Debug:
     def Log(log:str):
         print(f"\033[0m[LOG]\033[0m {log}")
@@ -57,7 +59,7 @@ class Debug:
     def LogSuccess(success:str):
         print(f"\033[92m[SUCCESS]\033[0m {success}")
 
-    def LogWarnig(warning:str):
+    def LogWarning(warning:str):
         print(f"\033[93m[WARNING]\033[0m {warning}")
     
     def LogRegistry(log:str):

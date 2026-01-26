@@ -19,11 +19,24 @@ class Engine:
     renderCollider = False
 
     @staticmethod
-    def Init(width=800, height=800, color:Color = Color(0, 0, 0), renderCollider = False):
+    def Init(color:Color = Color(0, 0, 0)):
+        import json
+
+        if not os.path.exists(r"Settings.json"):
+            Debug.LogError(f"No 'Settings.json' file", isFatal=True)
+            return
+        
         pygame.init()
-        Engine.screen = pygame.display.set_mode((width, height))
-        Engine.static_screen = pygame.Surface((width, height))
-        Engine.renderCollider = renderCollider
+        Engine.font = pygame.font.SysFont(None, 24)
+
+        with open(r'Settings.json', 'r', encoding='utf-8') as fichier:
+            settings = json.load(fichier)
+            
+            Engine.screen = pygame.display.set_mode((settings["resolution"]["width"], settings["resolution"]["height"]))
+            Engine.static_screen = pygame.Surface((settings["resolution"]["width"], settings["resolution"]["height"]))
+            Engine.renderCollider = settings["renderCollider"]
+
+            del settings
 
         Engine.clock = pygame.time.Clock()
         Engine.running = True
@@ -31,7 +44,7 @@ class Engine:
         Engine.screen.fill((color.r, color.g, color.b))
         Engine.static_screen.fill((color.r, color.g, color.b))
         pygame.display.flip()
-        
+
     @staticmethod
     def BakeStaticObjects():
         from UnipyEngine.Core import GameObject
@@ -50,30 +63,14 @@ class Engine:
                         if hasattr(comp, "RenderCollider") and callable(comp.RenderCollider):
                             comp.RenderCollider(Engine.static_world_surface)
 
-
     @staticmethod
     def Run():
-        from UnipyEngine.Core import GameObject, Vector3, Transform
+        from UnipyEngine.Core import GameObject, Vector3
         Engine.BakeStaticObjects()
 
         while Engine.running:
             Rigidbody2D.ClearFrameCollisions()
 
-            Engine.screen.fill((Engine.color.r, Engine.color.g, Engine.color.b))
-            # Blitter la surface statique optimisée
-            from UnipyEngine.Rendering import Camera
-            if Camera.active_camera and Engine.static_world_surface:
-                cam = Camera.active_camera
-                zoom = cam.zoom
-                # Position écran pour (0,0) monde (centre)
-                screen_00 = Camera.WorldToScreen(Vector3(0, 0, 0))
-                if zoom == 1.0:
-                    # Pas de scaling pour zoom=1, plus rapide
-                    Engine.screen.blit(Engine.static_world_surface, (screen_00.x, screen_00.y))
-                else:
-                    # Scaling pour autres zooms (plus lent)
-                    scaled_static = pygame.transform.scale(Engine.static_world_surface, (int(10000 * zoom), int(10000 * zoom)))
-                    Engine.screen.blit(scaled_static, (screen_00.x, screen_00.y))
             dt = Engine.clock.tick(60) / 1000.0
 
             events = pygame.event.get()
@@ -85,16 +82,42 @@ class Engine:
                     if hasattr(component, "Update") and callable(component.Update):
                         component.Update(dt)
 
-            # 2) Render: renderiser tous les objets non-statiques après les updates
-            for gameObject in GameObject.instances:
-                if not gameObject.static:
-                    for component in gameObject.components:
-                        if hasattr(component, "Render") and callable(component.Render):
-                            component.Render(Engine.screen)
-                    if Engine.renderCollider:
-                        for comp in gameObject.components:
-                            if hasattr(comp, "RenderCollider") and callable(comp.RenderCollider):
-                                comp.RenderCollider(Engine.screen)
+            from UnipyEngine.Rendering import Camera
+
+            # 2) Render
+            if Camera.active_camera != None:
+                # Remplir l'écran avec la couleur de fond de la caméra
+                Engine.screen.fill(tuple(Camera.active_camera.bakgroundColor))
+
+                # Blitter la surface statique optimisée
+                if Engine.static_world_surface:
+                    cam = Camera.active_camera
+                    zoom = cam.zoom
+                    # Position écran pour (0,0) monde (centre)
+                    screen_00 = Camera.WorldToScreen(Vector3(0, 0, 0))
+                    if zoom == 1.0:
+                        # Pas de scaling pour zoom=1, plus rapide
+                        Engine.screen.blit(Engine.static_world_surface, (screen_00.x, screen_00.y))
+                    else:
+                        # Scaling pour autres zooms (plus lent)
+                        scaled_static = pygame.transform.scale(Engine.static_world_surface, (int(10000 * zoom), int(10000 * zoom)))
+                        Engine.screen.blit(scaled_static, (screen_00.x, screen_00.y))
+
+                # Render: renderiser tous les objets non-statiques
+                for gameObject in GameObject.instances:
+                    if not gameObject.static:
+                        for component in gameObject.components:
+                            if hasattr(component, "Render") and callable(component.Render):
+                                component.Render(Engine.screen)
+                        if Engine.renderCollider:
+                            for comp in gameObject.components:
+                                if hasattr(comp, "RenderCollider") and callable(comp.RenderCollider):
+                                    comp.RenderCollider(Engine.screen)
+            else:
+                Engine.screen.fill(tuple(Color(0, 0, 0)))
+                text = Engine.font.render("Pas de caméra dans la scène", True, (255, 255, 255))
+                rect = text.get_rect(center=(Engine.screen.get_width() // 2, Engine.screen.get_height() // 2))
+                Engine.screen.blit(text, rect)
 
             pygame.display.flip()
 
@@ -154,7 +177,7 @@ class Engine:
             hasInvalidMod = False
 
             # affichage clair
-            Debug.LogWarnig("UnipyEngine: Scripts changed, reloading required.\n")
+            Debug.LogWarning("UnipyEngine: Scripts changed, reloading required.\n")
             time.sleep(0.5)
             for mod in sorted(added):
                 file = f"{mod.replace('.', os.sep)}.py"

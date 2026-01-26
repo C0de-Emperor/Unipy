@@ -6,9 +6,9 @@ Engine.LoadScripts("Assets")
 # Enregistrer les modules
 ModuleManagement.ModuleManager.register_all_modules()
 
-Engine.Init(900, 900, color=Color(54, 215, 247), renderCollider=True)
+Engine.Init()
 
-# Chargement de la scène
-SceneManager.LoadScene("Game")
+# Chargement de la scène initiale
+SceneManager.LoadInitialScene()
 
 Engine.Run()

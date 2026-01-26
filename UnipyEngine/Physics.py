@@ -186,7 +186,7 @@ class Rigidbody2D(Component):
         self.forces = Vector2(0, 0)
         """
         if(bodyType == BodyState.CYNEMATIC and self.gameObject.static == True):
-             Debug.LogWarnig(f"Static gameobject can't be Cynematic")
+             Debug.LogWarning(f"Static gameobject can't be Cynematic")
         """  
         self.bodyType = bodyType
 

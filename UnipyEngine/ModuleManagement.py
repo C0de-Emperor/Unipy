@@ -14,17 +14,22 @@ class ModuleType:
 
 class Scene(ModuleType):
     """Classe pour définir une scène"""
-    def __init__(self, name):
+    def __init__(self, name, load_func):
         super().__init__(name, "scene")
+        self.load_func = load_func
 
 class Script(ModuleType):
     """Classe pour définir un script"""
-    def __init__(self, name):
-        super().__init__(name, "script")
+    def __init__(self, caller:str):
+        if caller == "__main__":
+            from UnipyEngine.Utils import Debug
+            Debug.LogError("__main__ module can't be declared as a Script.", isFatal=True)
+        else:
+            super().__init__(caller.rsplit(".", 1)[-1], "script")
 
 class ModuleManager:
     @staticmethod
-    def find_module(module_type, name):
+    def find_module(module_type:ModuleType, name:str):
         """Trouve un module par type et nom"""
         obj = ModuleType.registry.get((module_type, name))
         return obj.module if obj else None
