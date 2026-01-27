@@ -5,9 +5,9 @@ from .Core import GameObject
 from .Core import Component, Transform
 
 # Physics
-from .Physics import Rigidbody2D
-from .Physics import CircleCollider2D, BoxCollider2D, TilemapCollider2D
-from .Physics import BodyState
+from .Physics2D import Rigidbody2D
+from .Physics2D import CircleCollider2D, BoxCollider2D, TilemapCollider2D
+from .Physics2D import BodyState
 
 # Rendering
 from .Rendering import SpriteRenderer, TilemapRenderer, SpriteSheet, Camera

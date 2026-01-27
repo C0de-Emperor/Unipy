@@ -1,26 +1,26 @@
 class ModuleType:
     """Classe de base pour typer les modules"""
-    registry = {}
+    registry: dict = {}
     
-    def __init__(self, name, module_type):
-        self.name = name
-        self.module_type = module_type
-        self.module = None
+    def __init__(self, name: str, module_type: str) -> None:
+        self.name: str = name
+        self.module_type: str = module_type
+        self.module: any = None
         ModuleType.registry[(module_type, name)] = self
     
-    def set_module(self, module):
+    def set_module(self, module: any) -> None:
         if self.module is None:
             self.module = module
 
 class Scene(ModuleType):
     """Classe pour définir une scène"""
-    def __init__(self, name, load_func):
+    def __init__(self, name: str, load_func) -> None:
         super().__init__(name, "scene")
         self.load_func = load_func
 
 class Script(ModuleType):
     """Classe pour définir un script"""
-    def __init__(self, caller:str):
+    def __init__(self, caller: str) -> None:
         if caller == "__main__":
             from UnipyEngine.Utils import Debug
             Debug.LogError("__main__ module can't be declared as a Script.", isFatal=True)
@@ -29,18 +29,18 @@ class Script(ModuleType):
 
 class ModuleManager:
     @staticmethod
-    def find_module(module_type:ModuleType, name:str):
+    def find_module(module_type: ModuleType, name: str) -> any:
         """Trouve un module par type et nom"""
         obj = ModuleType.registry.get((module_type, name))
         return obj.module if obj else None
     
     @staticmethod
-    def get_modules_by_type(module_type):
+    def get_modules_by_type(module_type: str) -> list:
         """Retourne tous les modules d'un type donné"""
         return [obj.module for (t, n), obj in ModuleType.registry.items() if t == module_type and obj.module]
     
     @staticmethod
-    def register_all_modules():
+    def register_all_modules() -> None:
         """Enregistre tous les ModuleType dans les modules importés"""
         import os
         import importlib

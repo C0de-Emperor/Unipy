@@ -1,5 +1,6 @@
 import pygame
 from UnipyEngine.Utils import Vector2
+from typing import List
 
 class KeyCode:
     # Lettres
@@ -91,11 +92,11 @@ class Input:
     _mouse_buttons = (False, False, False)
 
     @staticmethod
-    def UpdateEvents(events):
+    def UpdateEvents(events: List[pygame.event.Event]) -> None:
         """Doit être appelée depuis Engine.Run() avec la liste pygame.event.get()."""
         Input._keys_down.clear()
         Input._keys_up.clear()
-
+        
         for event in events:
             if event.type == pygame.KEYDOWN:
                 Input._keys_down.add(event.key)
@@ -129,7 +130,7 @@ class Input:
         return key in Input._keys_up
 
     @staticmethod
-    def GetMousePosition():
+    def GetMousePosition() -> Vector2:
         return Vector2(*Input._mouse_pos)
 
     @staticmethod

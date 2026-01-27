@@ -1,23 +1,35 @@
 import math
 import pygame
+from typing import Optional
 
 from UnipyEngine.Core import Component, Transform, GameObject
 from UnipyEngine.Utils import Vector2, BodyState, Vector3
 
 
+class RaycastHit2D:
+    def __init__(self, collider: "Collider2D", distance: float, normal: Vector2, point: Vector2) -> None:
+        self.collider: Collider2D = collider
+        self.distance: float = distance
+        self.normal: Vector2 = normal
+        self.point: Vector2 = point
+
 class Collider2D(Component):
-    def __init__(self, local_position=Vector3(0,0,0), gameObject=None):
+    def __init__(self, local_position: Vector3 = Vector3(0,0,0), gameObject: Optional[GameObject] = None) -> None:
         super().__init__(gameObject=gameObject, requiredComponents=[Transform, Rigidbody2D])
-        self.local_position = local_position
+        self.local_position: Vector3 = local_position
 
     def Intersects(self, other) -> bool:
         """Test de collision avec un autre collider (à spécialiser)."""
         raise NotImplementedError("Chaque collider doit définir Intersects()")
 
+    def IntersectsRay(self, origin: Vector2, direction: Vector2, distance: float) -> Optional[RaycastHit2D]:
+        """Test d'intersection avec un rayon (à spécialiser)."""
+        raise NotImplementedError("Chaque collider doit définir IntersectsRay()")
+
 class BoxCollider2D(Collider2D):
-    def __init__(self, size:Vector2, local_position=Vector3(0,0,0), gameObject=None):
+    def __init__(self, size: Vector2, local_position: Vector3 = Vector3(0,0,0), gameObject: Optional[GameObject] = None) -> None:
         super().__init__(gameObject=gameObject, local_position=local_position)
-        self.size = size
+        self.size: Vector2 = size
 
     def GetRect(self):
         transform = self.gameObject.GetComponent(Transform)
@@ -42,6 +54,59 @@ class BoxCollider2D(Collider2D):
             return other.Intersects(self)  # délègue au cercle
 
         return False
+
+    def IntersectsRay(self, origin: Vector2, direction: Vector2, distance: float) -> Optional[RaycastHit2D]:
+        rect = self.GetRect()
+        if not rect:
+            return None
+
+        # Ray vs Axis-Aligned Bounding Box intersection
+        min_x = rect.left
+        max_x = rect.right
+        min_y = rect.top
+        max_y = rect.bottom
+
+        # Avoid division by zero
+        if direction.x != 0:
+            t1 = (min_x - origin.x) / direction.x
+            t2 = (max_x - origin.x) / direction.x
+        else:
+            t1 = float('-inf') if min_x <= origin.x <= max_x else float('inf')
+            t2 = t1
+
+        if direction.y != 0:
+            t3 = (min_y - origin.y) / direction.y
+            t4 = (max_y - origin.y) / direction.y
+        else:
+            t3 = float('-inf') if min_y <= origin.y <= max_y else float('inf')
+            t4 = t3
+
+        t_min = max(min(t1, t2), min(t3, t4))
+        t_max = min(max(t1, t2), max(t3, t4))
+
+        if t_max < 0 or t_min > t_max or t_min > distance:
+            return None
+
+        t = t_min if t_min >= 0 else t_max
+        if t < 0 or t > distance:
+            return None
+
+        point = origin + direction * t
+
+        # Determine normal
+        epsilon = 1e-6
+        if abs(point.x - min_x) < epsilon:
+            normal = Vector2(-1, 0)
+        elif abs(point.x - max_x) < epsilon:
+            normal = Vector2(1, 0)
+        elif abs(point.y - min_y) < epsilon:
+            normal = Vector2(0, -1)
+        elif abs(point.y - max_y) < epsilon:
+            normal = Vector2(0, 1)
+        else:
+            normal = Vector2(0, 0)  # Fallback, shouldn't happen
+
+        return RaycastHit2D(self, t, normal, point)
 
     def RenderCollider(self, used_screen):
             rect = self.GetRect()
@@ -68,9 +133,9 @@ class BoxCollider2D(Collider2D):
                 pygame.draw.rect(used_screen, (200, 0, 0), rect, 2)
 
 class CircleCollider2D(Collider2D):
-    def __init__(self, radius:float, local_position=Vector3(0,0,0), gameObject=None):
+    def __init__(self, radius: float, local_position: Vector3 = Vector3(0,0,0), gameObject: Optional[GameObject] = None) -> None:
         super().__init__(gameObject=gameObject, local_position=local_position)
-        self.radius = radius
+        self.radius: float = radius
 
     def GetCircle(self):
         transform = self.gameObject.GetComponent(Transform)
@@ -102,6 +167,38 @@ class CircleCollider2D(Collider2D):
 
         return False
 
+    def IntersectsRay(self, origin: Vector2, direction: Vector2, distance: float) -> Optional[RaycastHit2D]:
+        circle = self.GetCircle()
+        if not circle:
+            return None
+
+        cx, cy, r = circle
+        center = Vector2(cx, cy)
+
+        # Ray vs Circle intersection
+        oc = origin - center
+        a = direction.dot(direction)  # Should be 1 if normalized
+        b = 2 * oc.dot(direction)
+        c = oc.dot(oc) - r * r
+
+        discriminant = b * b - 4 * a * c
+        if discriminant < 0:
+            return None
+
+        sqrt_d = math.sqrt(discriminant)
+        t1 = (-b - sqrt_d) / (2 * a)
+        t2 = (-b + sqrt_d) / (2 * a)
+
+        # Choose the smallest positive t
+        t = min(t1, t2) if t1 >= 0 else t2
+        if t < 0 or t > distance:
+            return None
+
+        point = origin + direction * t
+        normal = (point - center).normalized()
+
+        return RaycastHit2D(self, t, normal, point)
+
     def RenderCollider(self, used_screen):
         circle = self.GetCircle()
         if circle:
@@ -123,11 +220,11 @@ class CircleCollider2D(Collider2D):
                 pygame.draw.circle(used_screen, (200, 0, 0), (int(cx), int(cy)), int(r), 2)
 
 class TilemapCollider2D(Collider2D):
-    def __init__(self, solid_tiles: list[str], gameObject=None):
+    def __init__(self, solid_tiles: list[str], gameObject: Optional[GameObject] = None) -> None:
         super().__init__(gameObject=gameObject)
         #self.tilemap = self.gameObject.GetComponent(Tile)
-        self.solid_tiles = set(solid_tiles)  # plus rapide en set
-        self.colliders = []  # liste de colliders internes
+        self.solid_tiles: set = set(solid_tiles)  # plus rapide en set
+        self.colliders: list = []  # liste de colliders internes
 
     def Start(self):
         """Génère les colliders au lancement."""
@@ -165,33 +262,35 @@ class TilemapCollider2D(Collider2D):
             if hasattr(col, "RenderCollider") and callable(col.RenderCollider):
                 col.RenderCollider(used_screen)
 
+    def IntersectsRay(self, origin: Vector2, direction: Vector2, distance: float) -> Optional[RaycastHit2D]:
+        closest_hit = None
+        closest_dist = distance
+        for tile in self.colliders:
+            hit = tile.IntersectsRay(origin, direction, distance)
+            if hit and hit.distance < closest_dist:
+                closest_dist = hit.distance
+                closest_hit = hit
+        return closest_hit
+
 class Rigidbody2D(Component):
 
     GRAVITY = Vector2(0, 9.8)
     collisions_handled_this_frame = set()  # static -> partagé par tous les Rigidbody2D
 
-    def __init__(self, initialVelocity, bodyType, mass=1.0, gravityScale=5.0, bounciness=0.5, gameObject=None):
-        assert isinstance(initialVelocity, Vector2)
-        assert isinstance(mass, (int, float)) and mass > 0
-        assert isinstance(gravityScale, (int, float))
-        assert isinstance(bounciness, (int, float))
-        assert isinstance(bodyType, BodyState)
+    def __init__(self, initialVelocity: Vector2, bodyType: BodyState, mass: float = 1.0, gravityScale: float = 5.0, bounciness: float = 0.5, gameObject: Optional[GameObject] = None) -> None:
 
         super().__init__(gameObject=gameObject, requiredComponents=[Transform])
 
-        self.velocity = initialVelocity
-        self.mass = float(mass)
-        self.gravityScale = gravityScale
-        self.bounciness = bounciness
-        self.forces = Vector2(0, 0)
-        """
-        if(bodyType == BodyState.CYNEMATIC and self.gameObject.static == True):
-             Debug.LogWarning(f"Static gameobject can't be Cynematic")
-        """  
-        self.bodyType = bodyType
+        self.velocity: Vector2 = initialVelocity
+        self.mass: float = float(mass)
+        self.gravityScale: float = float(gravityScale)
+        self.bounciness: float = float(bounciness)
+        self.forces: Vector2 = Vector2.zero()
 
-        self.current_collisions = set()  # collisions de cette frame
-        self.previous_collisions = set() # collisions de la frame précédente
+        self.bodyType: BodyState = bodyType
+
+        self.current_collisions: set = set()  # collisions de cette frame
+        self.previous_collisions: set = set() # collisions de la frame précédente
 
     def AddForce(self, force: Vector2):
         self.forces.x += force.x
@@ -371,3 +470,25 @@ class Rigidbody2D(Component):
         """À appeler au début de chaque frame (avant tous les Updates)."""
         Rigidbody2D.collisions_handled_this_frame.clear()
 
+class Raycast:
+    def __init__(self, origin: Vector2, direction: Vector2, distance: float) -> Optional[RaycastHit2D]:
+        self.origin: Vector2 = Vector2(origin)
+        self.direction: Vector2 = direction.normalized()
+        self.distance: float = distance
+        self.hit: Optional[RaycastHit2D] = self._perform_raycast()
+
+    def _perform_raycast(self) -> Optional[RaycastHit2D]:
+        closest_hit = None
+        closest_dist = self.distance
+
+        for obj in GameObject.instances:
+            collider = obj.GetComponent(Collider2D)
+            if not collider:
+                continue
+
+            hit = collider.IntersectsRay(self.origin, self.direction, self.distance)
+            if hit and hit.distance < closest_dist:
+                closest_dist = hit.distance
+                closest_hit = hit
+
+        return closest_hit

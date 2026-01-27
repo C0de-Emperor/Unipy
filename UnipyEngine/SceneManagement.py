@@ -2,10 +2,10 @@ from UnipyEngine.Core import GameObject
 from UnipyEngine.Utils import Debug
 
 class SceneManager:
-    current_scene = None
+    current_scene: str = None
 
     @staticmethod
-    def LoadScene(name: str):
+    def LoadScene(name: str) -> None:
         from UnipyEngine.Rendering import Camera
         if SceneManager.current_scene == name:
             return
@@ -33,7 +33,7 @@ class SceneManager:
             Debug.LogError(f"Error loading scene '{name}': {e}", isFatal=True)
 
     @staticmethod
-    def LoadInitialScene():
+    def LoadInitialScene() -> None:
         import os, json
         if not os.path.exists(r"Settings.json"):
             Debug.LogError(f"No 'Settings.json' file", isFatal=True)
@@ -44,5 +44,5 @@ class SceneManager:
             del settings
 
     @staticmethod
-    def GetActiveScene():
+    def GetActiveScene() -> str:
         return SceneManager.current_scene

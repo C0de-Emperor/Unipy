@@ -5,7 +5,7 @@ import re
 import pygame
 
 from UnipyEngine.Input import Input
-from UnipyEngine.Physics import Rigidbody2D
+from UnipyEngine.Physics2D import Rigidbody2D
 from UnipyEngine.Utils import Debug, Color
 
 screen = None
@@ -46,7 +46,7 @@ class Engine:
         pygame.display.flip()
 
     @staticmethod
-    def BakeStaticObjects():
+    def BakeStaticObjects() -> None:
         from UnipyEngine.Core import GameObject
         # Créer une surface monde pour les statiques (assez grande pour le monde)
         Engine.static_world_surface = pygame.Surface((10000, 10000), pygame.SRCALPHA)
@@ -64,7 +64,7 @@ class Engine:
                             comp.RenderCollider(Engine.static_world_surface)
 
     @staticmethod
-    def Run():
+    def Run() -> None:
         from UnipyEngine.Core import GameObject, Vector3
         Engine.BakeStaticObjects()
 
@@ -137,7 +137,7 @@ class Engine:
         return re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', name) is not None
     
     @staticmethod
-    def LoadScripts(folder="Assets"):
+    def LoadScripts(folder: str = "Assets") -> None:
         # nettoyer la console
         os.system("cls" if os.name == "nt" else "clear")
         time.sleep(0.5)

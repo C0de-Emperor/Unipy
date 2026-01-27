@@ -1,22 +1,22 @@
-from UnipyEngine.Core import Component,Transform
+from UnipyEngine.Core import Component,Transform, GameObject
 from UnipyEngine.Utils import DrawingShape, Color
 from UnipyEngine.Engine import Engine
 from UnipyEngine.Utils import Debug, Vector2, Vector3
+from typing import Union, Optional, Dict
 import pygame
 import json
 import os
 
 class SpriteRenderer(Component):
-    def __init__(self, shape:DrawingShape=None, color:Color=None, image=None, gameObject=None):
+    def __init__(self, shape: Optional[DrawingShape] = None, color: Optional[Color] = None, image: Optional[Union[str, pygame.Surface]] = None, gameObject: Optional[GameObject] = None) -> None:
         """
         - shape + color -> rend une forme simple (cercle ou carré).
         - image (str ou pygame.Surface) -> rend une texture PNG.
         """
         super().__init__(gameObject=gameObject, requiredComponents=[Transform])
 
-        self.drawShape = shape
-        self.color = color
-        self.sprite = None  # surface pygame si image chargée
+        self.drawShape: Optional[DrawingShape] = shape
+        self.color: Color = color if color else Color(0, 0, 0)
 
         if image:
             if isinstance(image, str):
@@ -24,9 +24,9 @@ class SpriteRenderer(Component):
                     Debug.LogError(f"Image not found: {image}", isFatal=True)
                 else:
                     img = pygame.image.load(image).convert_alpha()
-                    self.sprite = img
+                    self.sprite: pygame.Surface = img
             elif isinstance(image, pygame.Surface):
-                self.sprite = image
+                self.sprite: pygame.Surface = image
             else:
                 Debug.LogError(f"Unsupported image type: {type(image)}", isFatal=True)
 
@@ -35,7 +35,7 @@ class SpriteRenderer(Component):
         if not transform:
             return
         # On prépare une surface temporaire et on utilise Camera.ApplyToSurface
-        if self.sprite:
+        if hasattr(self, 'sprite') and self.sprite:
             surf = pygame.transform.scale(self.sprite, (int(transform.size.x), int(transform.size.y)))
             # world position : on passe le coin top-left (comme pour tiles)
             world_pos = Vector3(transform.position.x - transform.size.x/2,
@@ -68,10 +68,10 @@ class SpriteRenderer(Component):
 class TilemapRenderer(Component):
     default_tile_path = r"UnipyEngine\default_texture.png"
 
-    def __init__(self, tile_size:Vector2, path:str, tileset:dict=None, gameObject=None):
+    def __init__(self, tile_size: Vector2, path: str, tileset: Optional[Dict[str, pygame.Surface]] = None, gameObject: Optional[GameObject] = None) -> None:
         super().__init__(gameObject=gameObject)
-        self.tile_size = tile_size
-        self.tileset = tileset or {}      # dict {tile_id: Color/Sprite}
+        self.tile_size: Vector2 = tile_size
+        self.tileset: Dict[str, pygame.Surface] = tileset or {}      # dict {tile_id: Color/Sprite}
 
         if "0" in tileset.keys():
             Debug.LogError("The key 0 is only for empty tile in tileset", isFatal=True)
@@ -110,12 +110,12 @@ class TilemapRenderer(Component):
 
         self.LoadTilemapFromJSON(path=path)
 
-    def SetTile(self, x:int, y:int, tile_id:int):
+    def SetTile(self, x: int, y: int, tile_id: int) -> None:
         """Place une tuile (tile_id) à la position (x, y)."""
         if 0 <= x < self.width and 0 <= y < self.height:
             self.grid[y][x] = tile_id
 
-    def GetTile(self, x:int, y:int):
+    def GetTile(self, x: int, y: int) -> int:
         return self.grid[y][x]
 
     def Render(self, used_screen):
@@ -141,7 +141,7 @@ class TilemapRenderer(Component):
                     scaled, pos = Camera.ApplyToSurface(surf, Vector3(px, py, 0), self.tile_size)
                     used_screen.blit(scaled, pos)
 
-    def LoadTilemapFromJSON(self, path:str):
+    def LoadTilemapFromJSON(self, path: str) -> None:
         if not os.path.exists(path):
             Debug.LogError(f"No file at '{path}'", isFatal=True)
             return
@@ -163,15 +163,15 @@ class TilemapRenderer(Component):
                 self.SetTile(x, y, tile_id)
 
 class SpriteSheet:
-    def __init__(self, path:str, tile_size:Vector2):
+    def __init__(self, path: str, tile_size: Vector2) -> None:
         if not os.path.exists(path):
             Debug.LogError(f"No file at '{path}'", isFatal=True)
             return
 
-        self.sheet = pygame.image.load(path).convert_alpha()
-        self.tile_size = tile_size
-        self.cols = self.sheet.get_width() // int(tile_size.x)
-        self.rows = self.sheet.get_height() // int(tile_size.y)
+        self.sheet: pygame.Surface = pygame.image.load(path).convert_alpha()
+        self.tile_size: Vector2 = tile_size
+        self.cols: int = self.sheet.get_width() // int(tile_size.x)
+        self.rows: int = self.sheet.get_height() // int(tile_size.y)
 
     def GetTile(self, col: int, row: int) -> pygame.Surface:
         """Récupère une tile par coordonnées (col, row)."""
@@ -199,17 +199,17 @@ class SpriteSheet:
 class Camera(Component):
     active_camera = None  # statique : une caméra active à la fois
 
-    def __init__(self, zoom:float = 1.0, gameObject=None, bakgroundColor:Color = Color(0, 50, 150)):
+    def __init__(self, zoom: float = 1.0, gameObject: Optional[GameObject] = None, bakgroundColor: Color = Color(0, 50, 150)) -> None:
         super().__init__(gameObject=gameObject, requiredComponents=[Transform])
-        self.zoom = zoom
-        self.target = None
-        self.offset = Vector2(0, 0)
-        self.bakgroundColor = bakgroundColor
+        self.zoom: float = zoom
+        self.target: GameObject = None
+        self.offset: Vector2 = Vector2(0, 0)
+        self.bakgroundColor: Color = bakgroundColor
 
         self.SetActive()
 
 
-    def Follow(self, target_obj, offset: Vector2 = None):
+    def Follow(self, target_obj: GameObject, offset: Vector2 = None) -> None:
         """Fait suivre la caméra à une GameObject (centre la caméra dessus).
         `target_obj` doit être une instance de GameObject.
         `offset` est appliqué en pixels (monde) après centrage.
@@ -218,7 +218,7 @@ class Camera(Component):
         if offset is not None:
             self.offset = offset
 
-    def Update(self, dt):
+    def Update(self, dt: float) -> None:
         # Si on suit une cible, positionner la transform de la caméra
         if not self.target:
             return
@@ -233,7 +233,7 @@ class Camera(Component):
         cam_tr.position.x = target_tr.position.x + self.offset.x
         cam_tr.position.y = target_tr.position.y + self.offset.y
 
-    def SetActive(self):
+    def SetActive(self) -> None:
         Camera.active_camera = self
         Engine.screen.fill(tuple(self.bakgroundColor))
 
@@ -257,7 +257,7 @@ class Camera(Component):
         return Vector2(screen_x, screen_y)
 
     @staticmethod
-    def ApplyToSurface(surface: pygame.Surface, world_pos: Vector3, size: Vector2):
+    def ApplyToSurface(surface: pygame.Surface, world_pos: Vector3, size: Vector2) -> tuple:
         """Applique la caméra lors du rendu d’une surface (sprite, tile, etc.)."""
         if not Camera.active_camera:
             Debug.LogError("No Active Camera", True)
