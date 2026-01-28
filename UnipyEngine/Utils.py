@@ -1,6 +1,6 @@
+from typing import Union
 from enum import Enum
 import math
-from typing import Optional, Union
 
 class DrawingShape(Enum):
     SQUARE = 1

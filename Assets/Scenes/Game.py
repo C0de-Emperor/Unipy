@@ -6,11 +6,12 @@ def load():
     from Assets import S
     GameObject(
         name = "Ball 1",
+        layer = LayerMask.NameToLayer("Player"),
         tags = [
             "Ball b"
         ],
+        transform = Transform(Vector3(400, 100, 0), Vector3(0, 0, 0), Vector2(60, 60)),
         components= [
-            Transform(Vector3(400, 100, 0), Vector3(0, 0, 0), Vector2(60, 60)),
             SpriteRenderer(DrawingShape.CIRCLE, color=Color(0, 0, 0)), #image=r"Assets\creative_casing.png"
             Rigidbody2D(Vector2(0, 0), BodyState.CYNEMATIC, mass=1, bounciness=0.9),
             CircleCollider2D(30),
@@ -35,9 +36,10 @@ def load():
 
     GameObject(
         name = "Tilemap",
+        layer = 0,
         tags = [],
-        components= [
-            Transform(Vector3(0, 0, 0), Vector3(0, 0, 0), Vector2(0, 0)),
+        transform = Transform(Vector3(0, 0, 0), Vector3(0, 0, 0), Vector2(0, 0)),
+        components = [
             TilemapRenderer(Vector2(75, 75), r"Assets\Tilemap.json", tileset=tileset),
             TilemapCollider2D(["1", "2", "3"]),
             Rigidbody2D(Vector2(0, 0), BodyState.KINEMATIC)

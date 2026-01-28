@@ -1,7 +1,7 @@
 # UnipyEngine/__init__.py
 
 # Core
-from .Core import GameObject
+from .Core import GameObject, LayerMask
 from .Core import Component, Transform
 
 # Physics

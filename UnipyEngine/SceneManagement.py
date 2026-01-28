@@ -18,19 +18,21 @@ class SceneManager:
         try:
             from UnipyEngine.ModuleManagement import ModuleType
             scene_obj = ModuleType.registry.get(("scene", name))
-            if scene_obj and hasattr(scene_obj, 'load_func'):
 
+            if scene_obj and hasattr(scene_obj, 'load_func'):
                 scene_obj.load_func()
                 SceneManager.current_scene = name
 
-                # Recréer la surface statique avec les nouveaux objets
                 from UnipyEngine.Engine import Engine
                 Engine.BakeStaticObjects()
+
                 Debug.LogSuccess(f"Scene '{name}' loaded successfully")
             else:
-                Debug.LogError(f"Scene '{name}' not found or does not have a valid scene object with load_func", isFatal=True)
-        except Exception as e:
-            Debug.LogError(f"Error loading scene '{name}': {e}", isFatal=True)
+                Debug.LogError(f"Scene '{name}' not found or missing load_func", isFatal=True)
+
+        except Exception:
+            import traceback
+            Debug.LogError(f"Error loading scene '{name}':\n{traceback.format_exc()}", isFatal=True)
 
     @staticmethod
     def LoadInitialScene() -> None:

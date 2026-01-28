@@ -55,13 +55,10 @@ class Engine:
         for gameObject in GameObject.instances:
             if gameObject.static:
                 for comp in gameObject.components:
-                    if hasattr(comp, "Render") and callable(comp.Render):
-                        # Rendre en coordonnées monde sur static_world_surface
-                        comp.Render(Engine.static_world_surface)
+                    comp.Render(Engine.static_world_surface)
                 if Engine.renderCollider:
                     for comp in gameObject.components:
-                        if hasattr(comp, "RenderCollider") and callable(comp.RenderCollider):
-                            comp.RenderCollider(Engine.static_world_surface)
+                        comp.RenderCollider(Engine.static_world_surface)
 
     @staticmethod
     def Run() -> None:
@@ -79,8 +76,7 @@ class Engine:
             # 1) Update: appeler Update sur TOUS les composants avant de renderer.
             for gameObject in GameObject.instances:
                 for component in gameObject.components:
-                    if hasattr(component, "Update") and callable(component.Update):
-                        component.Update(dt)
+                    component.Update(dt)
 
             from UnipyEngine.Rendering import Camera
 
@@ -107,12 +103,10 @@ class Engine:
                 for gameObject in GameObject.instances:
                     if not gameObject.static:
                         for component in gameObject.components:
-                            if hasattr(component, "Render") and callable(component.Render):
-                                component.Render(Engine.screen)
+                            component.Render(Engine.screen)
                         if Engine.renderCollider:
                             for comp in gameObject.components:
-                                if hasattr(comp, "RenderCollider") and callable(comp.RenderCollider):
-                                    comp.RenderCollider(Engine.screen)
+                                comp.RenderCollider(Engine.screen)
             else:
                 Engine.screen.fill(tuple(Color(0, 0, 0)))
                 text = Engine.font.render("Pas de caméra dans la scène", True, (255, 255, 255))

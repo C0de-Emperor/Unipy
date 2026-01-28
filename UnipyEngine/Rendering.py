@@ -1,4 +1,4 @@
-from UnipyEngine.Core import Component,Transform, GameObject
+from UnipyEngine.Core import Component, Transform, GameObject
 from UnipyEngine.Utils import DrawingShape, Color
 from UnipyEngine.Engine import Engine
 from UnipyEngine.Utils import Debug, Vector2, Vector3
@@ -31,7 +31,7 @@ class SpriteRenderer(Component):
                 Debug.LogError(f"Unsupported image type: {type(image)}", isFatal=True)
 
     def Render(self, used_screen):
-        transform = self.gameObject.GetComponent(Transform)
+        transform = self.gameObject.transform
         if not transform:
             return
         # On prépare une surface temporaire et on utilise Camera.ApplyToSurface
@@ -69,7 +69,7 @@ class TilemapRenderer(Component):
     default_tile_path = r"UnipyEngine\default_texture.png"
 
     def __init__(self, tile_size: Vector2, path: str, tileset: Optional[Dict[str, pygame.Surface]] = None, gameObject: Optional[GameObject] = None) -> None:
-        super().__init__(gameObject=gameObject)
+        super().__init__(gameObject=gameObject, requiredComponents=[Transform])
         self.tile_size: Vector2 = tile_size
         self.tileset: Dict[str, pygame.Surface] = tileset or {}      # dict {tile_id: Color/Sprite}
 
@@ -119,7 +119,7 @@ class TilemapRenderer(Component):
         return self.grid[y][x]
 
     def Render(self, used_screen):
-        t = self.gameObject.GetComponent(Transform)
+        t = self.gameObject.transform
         for y in range(self.height):
             for x in range(self.width):
                 tile_id = self.grid[y][x]
@@ -223,8 +223,8 @@ class Camera(Component):
         if not self.target:
             return
 
-        cam_tr = self.gameObject.GetComponent(Transform)
-        target_tr = self.target.GetComponent(Transform)
+        cam_tr = self.gameObject.transform
+        target_tr = self.target.transform
         if not cam_tr or not target_tr:
             return
 
@@ -242,7 +242,7 @@ class Camera(Component):
         if not Camera.active_camera:
             return Vector2(pos.x, pos.y)
 
-        cam_tr = Camera.active_camera.gameObject.GetComponent(Transform)
+        cam_tr = Camera.active_camera.gameObject.transform
         if not cam_tr:
             return Vector2(pos.x, pos.y)
 

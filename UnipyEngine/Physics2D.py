@@ -1,8 +1,8 @@
 import math
 import pygame
-from typing import Optional
+from typing import Optional, Set
 
-from UnipyEngine.Core import Component, Transform, GameObject
+from UnipyEngine.Core import Component, Transform, GameObject, LayerMask
 from UnipyEngine.Utils import Vector2, BodyState, Vector3
 
 
@@ -32,7 +32,7 @@ class BoxCollider2D(Collider2D):
         self.size: Vector2 = size
 
     def GetRect(self):
-        transform = self.gameObject.GetComponent(Transform)
+        transform = self.gameObject.transform
         if transform:
             world_x = (transform.position.x + self.local_position.x) - self.size.x / 2
             world_y = (transform.position.y + self.local_position.y) - self.size.y / 2
@@ -60,31 +60,51 @@ class BoxCollider2D(Collider2D):
         if not rect:
             return None
 
-        # Ray vs Axis-Aligned Bounding Box intersection
+        # Convertir origin en Vector2 s'il s'agit d'un Vector3
+        if hasattr(origin, 'z'):
+            origin = Vector2(origin.x, origin.y)
+
+        # Ray vs Axis-Aligned Bounding Box intersection (Slab method)
         min_x = rect.left
         max_x = rect.right
         min_y = rect.top
         max_y = rect.bottom
 
-        # Avoid division by zero
-        if direction.x != 0:
+        t_min = 0.0
+        t_max = distance
+
+        # Check X slab
+        if abs(direction.x) > 1e-6:  # direction.x != 0
             t1 = (min_x - origin.x) / direction.x
             t2 = (max_x - origin.x) / direction.x
+            
+            if t1 > t2:
+                t1, t2 = t2, t1
+            
+            t_min = max(t_min, t1)
+            t_max = min(t_max, t2)
         else:
-            t1 = float('-inf') if min_x <= origin.x <= max_x else float('inf')
-            t2 = t1
+            # Ray is parallel to X slab, check if it's inside
+            if origin.x < min_x or origin.x > max_x:
+                return None
 
-        if direction.y != 0:
+        # Check Y slab
+        if abs(direction.y) > 1e-6:  # direction.y != 0
             t3 = (min_y - origin.y) / direction.y
             t4 = (max_y - origin.y) / direction.y
+            
+            if t3 > t4:
+                t3, t4 = t4, t3
+            
+            t_min = max(t_min, t3)
+            t_max = min(t_max, t4)
         else:
-            t3 = float('-inf') if min_y <= origin.y <= max_y else float('inf')
-            t4 = t3
+            # Ray is parallel to Y slab, check if it's inside
+            if origin.y < min_y or origin.y > max_y:
+                return None
 
-        t_min = max(min(t1, t2), min(t3, t4))
-        t_max = min(max(t1, t2), max(t3, t4))
-
-        if t_max < 0 or t_min > t_max or t_min > distance:
+        # Check if intersection exists
+        if t_min > t_max or t_max < 0:
             return None
 
         t = t_min if t_min >= 0 else t_max
@@ -93,7 +113,7 @@ class BoxCollider2D(Collider2D):
 
         point = origin + direction * t
 
-        # Determine normal
+        # Determine normal based on which face was hit
         epsilon = 1e-6
         if abs(point.x - min_x) < epsilon:
             normal = Vector2(-1, 0)
@@ -104,7 +124,7 @@ class BoxCollider2D(Collider2D):
         elif abs(point.y - max_y) < epsilon:
             normal = Vector2(0, 1)
         else:
-            normal = Vector2(0, 0)  # Fallback, shouldn't happen
+            normal = Vector2(0, 0)  # Fallback
 
         return RaycastHit2D(self, t, normal, point)
 
@@ -138,7 +158,7 @@ class CircleCollider2D(Collider2D):
         self.radius: float = radius
 
     def GetCircle(self):
-        transform = self.gameObject.GetComponent(Transform)
+        transform = self.gameObject.transform
         if transform:
             return (transform.position.x + self.local_position.x, transform.position.y + self.local_position.y, self.radius)
         return None
@@ -171,6 +191,10 @@ class CircleCollider2D(Collider2D):
         circle = self.GetCircle()
         if not circle:
             return None
+
+        # Convertir origin en Vector2 s'il s'agit d'un Vector3
+        if hasattr(origin, 'z'):
+            origin = Vector2(origin.x, origin.y)
 
         cx, cy, r = circle
         center = Vector2(cx, cy)
@@ -259,8 +283,7 @@ class TilemapCollider2D(Collider2D):
 
     def RenderCollider(self, used_screen):
         for col in self.colliders:
-            if hasattr(col, "RenderCollider") and callable(col.RenderCollider):
-                col.RenderCollider(used_screen)
+            col.RenderCollider(used_screen)
 
     def IntersectsRay(self, origin: Vector2, direction: Vector2, distance: float) -> Optional[RaycastHit2D]:
         closest_hit = None
@@ -289,16 +312,16 @@ class Rigidbody2D(Component):
 
         self.bodyType: BodyState = bodyType
 
-        self.current_collisions: set = set()  # collisions de cette frame
-        self.previous_collisions: set = set() # collisions de la frame précédente
+        self.current_collisions: Set[GameObject] = set()  # collisions de cette frame
+        self.previous_collisions: Set[GameObject] = set() # collisions de la frame précédente
 
     def AddForce(self, force: Vector2):
         self.forces.x += force.x
         self.forces.y += force.y
 
     def Update(self, dt):
-        transform = self.gameObject.GetComponent(Transform)
-        collider = self.gameObject.GetComponent(Collider2D)
+        transform = self.gameObject.transform
+        collider = self.gameObject.GetComponent(Collider2D) if self.gameObject.HasComponent(Collider2D) else None
 
         if(self.bodyType == BodyState.CYNEMATIC):
             # 1. appliquer gravité + forces
@@ -323,9 +346,9 @@ class Rigidbody2D(Component):
             for other in GameObject.instances:
                 if other is self.gameObject:
                     continue
-                other_collider = other.GetComponent(Collider2D)
-                if not other_collider:
+                if not other.HasComponent(Collider2D):
                     continue
+                other_collider = other.GetComponent(Collider2D)
 
                 # clé unique pour la paire
                 pair = tuple(sorted([id(self.gameObject), id(other)]))
@@ -367,7 +390,7 @@ class Rigidbody2D(Component):
         self.previous_collisions = set(self.current_collisions)
         
     def ResolveCollision(self, col1, col2):
-        transform = self.gameObject.GetComponent(Transform)
+        transform = self.gameObject.transform
 
         # Si le corps est kinematic, on ne bouge pas ni ne change la vitesse
         if self.bodyType == BodyState.KINEMATIC:  
@@ -471,10 +494,11 @@ class Rigidbody2D(Component):
         Rigidbody2D.collisions_handled_this_frame.clear()
 
 class Raycast:
-    def __init__(self, origin: Vector2, direction: Vector2, distance: float) -> Optional[RaycastHit2D]:
-        self.origin: Vector2 = Vector2(origin)
+    def __init__(self, origin: Vector2, direction: Vector2, distance: float, layerMask: Optional[LayerMask] = None) -> None:
+        self.origin: Vector2 = Vector2(origin.x, origin.y)
         self.direction: Vector2 = direction.normalized()
         self.distance: float = distance
+        self.layerMask: LayerMask = layerMask if layerMask is not None else LayerMask((1 << 32) - 1)  # Tous les layers par défaut
         self.hit: Optional[RaycastHit2D] = self._perform_raycast()
 
     def _perform_raycast(self) -> Optional[RaycastHit2D]:
@@ -482,9 +506,21 @@ class Raycast:
         closest_dist = self.distance
 
         for obj in GameObject.instances:
-            collider = obj.GetComponent(Collider2D)
-            if not collider:
+            # Vérifier si l'objet est dans le LayerMask (layer par défaut à 0 s'il n'existe pas)
+            obj_layer = getattr(obj, 'layer', 0)
+            
+            # Si obj_layer est un LayerMask, en extraire le mask
+            if isinstance(obj_layer, LayerMask):
+                obj_layer = obj_layer.mask
+            
+            # Vérifier si le layer est activé dans le LayerMask
+            layermask_value = self.layerMask.mask if isinstance(self.layerMask, LayerMask) else self.layerMask
+            if not (layermask_value & (1 << obj_layer)):
                 continue
+            
+            if not obj.HasComponent(Collider2D):
+                continue
+            collider = obj.GetComponent(Collider2D)
 
             hit = collider.IntersectsRay(self.origin, self.direction, self.distance)
             if hit and hit.distance < closest_dist:
